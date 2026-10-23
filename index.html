@@ -108,7 +108,7 @@
         .timeline-card h4 { margin: 0; font-size: 16px; line-height: 1.35; }
         .timeline-place { margin: 4px 0 9px; color: var(--text); font-size: 13px; font-weight: 650; }
         .timeline-card p:last-child { margin: 0; color: var(--muted); font-size: 13px; }
-        .projects-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+        .projects-grid { display: grid; grid-template-columns: minmax(0, 760px); justify-content: center; gap: 22px; }
         .project-card { overflow: hidden; transition: transform .25s, box-shadow .25s; }
         .project-card:hover { transform: translateY(-5px); box-shadow: 0 24px 54px rgba(58, 43, 104, .15); }
         .project-visual { position: relative; display: grid; min-height: 250px; place-items: center; overflow: hidden; background: #e9e7f3; }
@@ -308,10 +308,10 @@
                     <article class="about-card">
                         <p>Mon parcours m’a conduite de l’INP-HB en Côte d’Ivoire à l’ESTP Paris, où je termine le cycle ingénieur en génie civil, spécialité <strong>Topographie &amp; Géonumérique</strong>.</p>
                         <p>J’ai travaillé sur des relevés, l’implantation d’ouvrages, le géoréférencement et la production de plans. Je m’intéresse aussi au développement de scripts Python et à l’automatisation des tâches géomatiques.</p>
-                        <p>Ces deux cartes ferroviaires illustrent cette approche : associer données géographiques, interface cartographique et outils de collecte pour explorer et documenter un réseau.</p>
+                        <p>La carte ferroviaire française présentée ici illustre cette approche : associer données géographiques, interface cartographique et outils de collecte pour explorer et documenter un réseau.</p>
                     </article>
                     <div class="stat-grid" aria-label="Quelques repères">
-                        <div class="stat-card"><span class="stat-number">2</span><span class="stat-label">projets cartographiques interactifs</span></div>
+                        <div class="stat-card"><span class="stat-number">1</span><span class="stat-label">projet cartographique interactif</span></div>
                         <div class="stat-card"><span class="stat-number">4</span><span class="stat-label">expériences professionnelles</span></div>
                         <div class="stat-card"><span class="stat-number">2</span><span class="stat-label">formations en génie civil</span></div>
                         <div class="stat-card"><span class="stat-number">2</span><span class="stat-label">pays d’études et d’expérience</span></div>
@@ -384,32 +384,10 @@
         <section class="section" id="projets">
             <div class="section-inner">
                 <div class="section-heading">
-                    <div><p class="section-kicker">Projets</p><h2>Des cartes pour explorer<br>et documenter le réseau.</h2></div>
-                    <p>Deux applications web cartographiques autour des infrastructures ferroviaires, de la recherche et de la collecte terrain.</p>
+                    <div><p class="section-kicker">Projet</p><h2>Explorer le réseau<br>ferré français.</h2></div>
+                    <p>Une application web cartographique pour rechercher les lignes, consulter le réseau et documenter des constats terrain.</p>
                 </div>
                 <div class="projects-grid">
-                    <article class="project-card">
-                        <div class="project-visual morocco" aria-label="Illustration du corridor ferroviaire marocain">
-                            <svg viewBox="0 0 420 205" role="img" aria-label="Axe ferroviaire stylisé au Maroc">
-                                <path d="M0 30c48 25 42 60 89 67s57-25 99-10 53 48 102 33 75-47 130-23" fill="none" stroke="#c4d5d4" stroke-width="2"/>
-                                <path d="M0 51c47 24 45 57 90 65s57-24 98-9 54 46 102 32 76-45 130-21" fill="none" stroke="#c4d5d4" stroke-width="2"/>
-                                <path d="M32 180c49-28 63-56 111-54s72 30 117 12 64-63 117-74" fill="none" stroke="#b9c7c5" stroke-width="2"/>
-                                <path d="M76 169c24-19 55-27 73-44s32-41 54-35 34 36 58 30 41-35 73-54 50-20 68-29" fill="none" stroke="#138f95" stroke-width="7" stroke-linecap="round"/>
-                                <path d="M76 169c24-19 55-27 73-44s32-41 54-35 34 36 58 30 41-35 73-54 50-20 68-29" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="2 9" stroke-linecap="round"/>
-                                <g fill="#fff" stroke="#168fc7" stroke-width="4"><circle cx="76" cy="169" r="8"/><circle cx="149" cy="127" r="8"/><circle cx="203" cy="90" r="8"/><circle cx="261" cy="120" r="8"/><circle cx="334" cy="66" r="8"/><circle cx="402" cy="37" r="8"/></g>
-                                <text x="30" y="194" fill="#566477" font-size="11" font-family="Arial">Marrakech</text><text x="361" y="23" fill="#566477" font-size="11" font-family="Arial">Kénitra</text>
-                            </svg>
-                        </div>
-                        <div class="project-content">
-                            <div class="project-topline"><span class="project-category">WebSIG · Maroc</span><span class="project-index">01 / 02</span></div>
-                            <h3>Carte ferroviaire Kénitra – Marrakech</h3>
-                            <p>Carte interactive du corridor et de ses gares repères, avec collecte locale d’événements, position GPS et photo. Les annotations peuvent être exportées pour être partagées.</p>
-                            <div class="tag-list"><span class="tag">Leaflet</span><span class="tag">Cartographie</span><span class="tag">Collecte terrain</span><span class="tag">GeoJSON</span></div>
-                            <a class="project-link" href="carte-presentation.html">Ouvrir la carte du Maroc
-                                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            </a>
-                        </div>
-                    </article>
                     <article class="project-card">
                         <div class="project-visual france" aria-label="Illustration du réseau ferroviaire français">
                             <svg viewBox="0 0 420 205" role="img" aria-label="Réseau ferroviaire français stylisé">
@@ -424,7 +402,7 @@
                             </svg>
                         </div>
                         <div class="project-content">
-                            <div class="project-topline"><span class="project-category">WebSIG · France</span><span class="project-index">02 / 02</span></div>
+                            <div class="project-topline"><span class="project-category">WebSIG · France</span><span class="project-index">01 / 01</span></div>
                             <h3>Carte du réseau ferré français</h3>
                             <p>Exploration de 1 638 tronçons avec recherche de villes et de lignes, filtres par état, mesure de distance et formulaire de constat géolocalisé avec photo.</p>
                             <div class="tag-list"><span class="tag">Leaflet</span><span class="tag">GeoJSON</span><span class="tag">Recherche spatiale</span><span class="tag">KML · CSV</span></div>
