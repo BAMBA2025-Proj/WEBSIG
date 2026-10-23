@@ -32,8 +32,7 @@
         .topbar h1 { margin: 0; color: #17344d; font-size: 18px; line-height: 1.2; }
         .topbar p { margin: 4px 0 0; color: #64748b; font-size: 12px; }
         .header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex: none; }
-        .source-badge { display: inline-flex; align-items: center; gap: 7px; padding: 7px 10px; border: 1px solid #e9d6ae; border-radius: 999px; background: #fff8e8; color: #79510e; font-size: 10px; font-weight: 750; white-space: nowrap; }
-        .source-badge::before { width: 7px; height: 7px; border-radius: 50%; background: #d28a18; content: ""; }
+        .header-tag { color: #64748b; font-size: 11px; font-weight: 650; white-space: nowrap; }
         .panel {
             position: fixed; top: 108px; bottom: 18px; left: 14px; z-index: 700;
             width: 360px; max-width: calc(100vw - 28px); overflow: auto;
@@ -47,6 +46,9 @@
             margin: 12px 0; padding: 10px; border: 1px solid #f1d59c; border-radius: 7px;
             background: #fff8e8; color: #744c08; font-size: 11px; line-height: 1.45;
         }
+        .data-disclosure { margin: 12px 0; border: 1px solid #e1e7ee; border-radius: 7px; background: #fff; }
+        .data-disclosure summary { padding: 9px 10px; color: #435267; font-size: 11px; font-weight: 700; cursor: pointer; }
+        .data-disclosure p { margin: 0; padding: 0 10px 10px; color: #64748b; font-size: 10px; line-height: 1.5; }
         .field { display: grid; gap: 5px; margin: 9px 0; }
         .field label, .layer-option { font-size: 12px; font-weight: 650; }
         input[type="text"], input[type="search"], select, textarea {
@@ -104,7 +106,7 @@
             .topbar h1 { font-size: 13px; }
             .topbar p { font-size: 9px; }
             .header-actions { gap: 5px; }
-            .source-badge { max-width: 112px; padding: 5px 7px; font-size: 8px; white-space: normal; }
+            .header-tag { display: none; }
             .panel-toggle { min-height: 36px; padding: 6px 8px; }
             .toggle-label { display: none; }
             .panel {
@@ -137,7 +139,7 @@
             </div>
         </div>
         <div class="header-actions">
-            <span class="source-badge">Voies OSM · non certifiées</span>
+            <span class="header-tag">Carte de suivi du projet</span>
             <button id="toggle-panel" class="panel-toggle" type="button" aria-controls="tools-panel" aria-expanded="true" aria-label="Masquer les outils">
                 <span class="toggle-icon" aria-hidden="true">☰</span>
                 <span class="toggle-label">Masquer les outils</span>
@@ -160,16 +162,20 @@
         </section>
 
         <div class="notice">
-            <strong>Carte de travail — données non certifiées.</strong>
-            Fond neutre Esri. Les voies proviennent du GeoPackage OpenStreetMap fourni (instantané du 30/10/2025) : ce n’est ni un inventaire officiel du réseau ferré national ni une donnée certifiée ONCF. L’axe bleu est un itinéraire indicatif raccordé à ces voies, pas un tracé certifié. Le tracé exact et les états d’exploitation restent à valider par le projet.
+            <strong>Carte de suivi du corridor ferroviaire.</strong>
+            Consulte les gares, les interventions et les prévisions du projet.
         </div>
+        <details class="data-disclosure">
+            <summary>Sources et limites des données</summary>
+            <p>Les voies sont issues du GeoPackage OpenStreetMap fourni (instantané du 30/10/2025, licence ODbL 1.0), avec fond cartographique Esri. Elles ne constituent pas un inventaire certifié ONCF/RFN. L’axe Kénitra–Marrakech affiché est indicatif et calculé à partir de ces voies. Le tracé exact et les états d’exploitation restent à valider par le projet.</p>
+        </details>
 
         <section>
             <h3>Couches visibles</h3>
             <div class="layer-list">
                 <label class="layer-option"><input id="show-stations" type="checkbox" checked> Gares repères</label>
-                <label class="layer-option"><input id="show-route" type="checkbox" checked><span class="swatch line-route"></span> Axe Kénitra–Marrakech (itinéraire indicatif OSM)</label>
-                <label class="layer-option"><input id="show-corridor" type="checkbox" checked><span class="swatch line-existing"></span> Autres voies du secteur (OSM)</label>
+                <label class="layer-option"><input id="show-route" type="checkbox" checked><span class="swatch line-route"></span> Axe Kénitra–Marrakech</label>
+                <label class="layer-option"><input id="show-corridor" type="checkbox" checked><span class="swatch line-existing"></span> Autres voies du secteur</label>
                 <label class="layer-option"><input id="show-north-branches" type="checkbox"><span class="swatch line-lgv"></span> Réseau au nord de Kénitra (contexte)</label>
                 <label class="layer-option"><input class="show-status" data-status="exploite" type="checkbox" checked><span class="swatch line-operating"></span> En exploitation</label>
                 <label class="layer-option"><input class="show-status" data-status="en-cours" type="checkbox" checked><span class="swatch line-current"></span> Travaux en cours</label>
@@ -232,7 +238,7 @@
                     <input id="import-data" type="file" accept=".geojson,.json,application/geo+json,application/json">
                 </label>
             </div>
-            <p class="attribution-note">Source des voies : GeoPackage OpenStreetMap fourni, instantané 2025-10-30 ; ODbL 1.0. Attributions &copy; OpenStreetMap contributors et Esri. Ce GeoPackage n’est pas un inventaire officiel certifié par l’ONCF/RFN. Les annotations sont conservées séparément pour cette carte dans ce navigateur ; exporte-les en GeoJSON pour les partager.</p>
+            <p class="attribution-note">Les annotations sont conservées séparément pour cette carte dans ce navigateur ; exporte-les en GeoJSON pour les partager. Les détails sur les données cartographiques sont disponibles dans « Sources et limites des données ».</p>
         </section>
         <p id="app-message" class="message" role="status" aria-live="polite">Chargement de la carte…</p>
     </aside>
@@ -299,6 +305,7 @@
                 maxZoom: 19,
                 attribution: ''
             }).addTo(map);
+            map.attributionControl.addAttribution('Données ferroviaires &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> (ODbL 1.0)');
 
             const stationLayer = L.featureGroup().addTo(map);
             const corridorLayer = L.featureGroup().addTo(map);
@@ -353,20 +360,20 @@
                             const name = feature.properties.name
                                 ? `<br>${escapeHtml(feature.properties.name)}`
                                 : '';
-                            layer.bindPopup(`<strong>Voie ferrée — OpenStreetMap</strong>${name}<br><small>Géométrie indicative, non certifiée ONCF</small>`);
+                            layer.bindPopup(`<strong>Voie ferrée</strong>${name}`);
                         }
                     }).addTo(corridorLayer);
                     L.geoJSON(northData, {
                         style: railwayStyle,
-                        onEachFeature: (feature, layer) => layer.bindPopup('<strong>Voie ferrée — OpenStreetMap</strong><br><small>Réseau au nord de Kénitra · couche de contexte</small>')
+                        onEachFeature: (feature, layer) => layer.bindPopup('<strong>Voie ferrée</strong><br><small>Réseau au nord de Kénitra · couche de contexte</small>')
                     }).addTo(northBranchesLayer);
                     L.geoJSON(routeData, {
                         style: routeStyle,
                         onEachFeature: (feature, layer) => layer.bindPopup(
-                            `<strong>${escapeHtml(feature.properties.name)}</strong><br><small>${feature.properties.length_km.toLocaleString('fr-FR')} km · itinéraire indicatif calculé dans le réseau OSM, non certifié ONCF</small>`
+                            `<strong>Axe Kénitra–Marrakech</strong><br><small>${feature.properties.length_km.toLocaleString('fr-FR')} km</small>`
                         )
                     }).addTo(routeLayer);
-                    showMessage(`${corridorData.features.length.toLocaleString('fr-FR')} tronçons OSM chargés pour le secteur ; l’axe indicatif Kénitra–Marrakech est mis en évidence.`);
+                    showMessage('Carte prête. L’axe Kénitra–Marrakech est mis en évidence.');
                 })
                 .catch((error) => {
                     showMessage(`Impossible de charger le réseau ferroviaire fourni : ${error.message}`, true);
