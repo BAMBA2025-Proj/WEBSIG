@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#9f1d35">
+    <meta name="theme-color" content="#17344d">
     <link rel="manifest" href="manifest-collecte.webmanifest">
     <title>Réseau ferroviaire · Kénitra – Marrakech</title>
     <link rel="stylesheet" href="assets/leaflet/leaflet.css">
@@ -22,17 +22,17 @@
             position: fixed; top: 14px; left: 14px; right: 14px; z-index: 800;
             display: flex; align-items: center; justify-content: space-between; gap: 18px;
             min-height: 112px; padding: 14px 20px;
-            border: 1px solid #7c1428; border-left: 6px solid #d5a34a; border-radius: 12px;
-            background: #9f1d35; box-shadow: 0 8px 28px #17212e35;
+            border: 1px solid #d6dfe6; border-left: 5px solid #087e8b; border-radius: 12px;
+            background: rgba(255,255,255,.98); box-shadow: 0 8px 28px #17212e24;
         }
         .brand { display: flex; align-items: center; gap: 18px; min-width: 0; }
         .logo { width: 100px; height: 78px; flex: none; display: block; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; object-fit: contain; }
         .brand-copy { min-width: 0; }
-        .eyebrow { display: block; margin-bottom: 4px; color: #f5d9a8; font-size: 11px; font-weight: 800; letter-spacing: .14em; }
-        .topbar h1 { margin: 0; color: #fff; font-size: clamp(24px, 2.2vw, 32px); line-height: 1.12; }
-        .topbar p { margin: 6px 0 0; color: #f8e9e8; font-size: 13px; }
+        .eyebrow { display: block; margin-bottom: 4px; color: #087e8b; font-size: 11px; font-weight: 800; letter-spacing: .14em; }
+        .topbar h1 { margin: 0; color: #17344d; font-size: clamp(24px, 2.2vw, 32px); line-height: 1.12; }
+        .topbar p { margin: 6px 0 0; color: #64748b; font-size: 13px; }
         .header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 14px; flex: none; }
-        .header-tag { color: #f8e9e8; font-size: 12px; font-weight: 650; white-space: nowrap; }
+        .header-tag { color: #64748b; font-size: 12px; font-weight: 650; white-space: nowrap; }
         .panel {
             position: fixed; top: 134px; bottom: 18px; left: 14px; z-index: 700;
             width: 360px; max-width: calc(100vw - 28px); overflow: auto;
@@ -84,8 +84,8 @@
         button.primary:hover { background: #102d41; }
         button.active { border-color: #087e8b; box-shadow: 0 0 0 2px #087e8b25; }
         button:disabled { cursor: not-allowed; opacity: .5; }
-        .panel-toggle { min-height: 42px; gap: 8px; padding: 8px 12px; border-color: #fff; background: #fff; color: #84172d; box-shadow: 0 3px 12px #17212e1c; }
-        .panel-toggle:hover { background: #f8e9e8; }
+        .panel-toggle { min-height: 42px; gap: 8px; padding: 8px 12px; border-color: #173f59; background: #173f59; color: #fff; box-shadow: 0 3px 12px #17212e1c; }
+        .panel-toggle:hover { background: #102d41; }
         .toggle-icon { font-size: 16px; line-height: 1; }
         .layer-list { display: grid; gap: 8px; }
         .layer-option { display: flex; align-items: center; gap: 8px; font-weight: 500; }
