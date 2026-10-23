@@ -3,721 +3,508 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#9f111b">
-    <title>Carte ferroviaire | Kénitra – Marrakech</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <meta name="theme-color" content="#f7f6fc">
+    <meta name="description" content="Portfolio de Matcheni Bamba, élève ingénieure en génie civil, topographie et géonumérique. Projets SIG, parcours et compétences.">
+    <title>Matcheni Bamba — Topographie &amp; géonumérique</title>
     <style>
         :root {
-            font-family: "Segoe UI", Arial, sans-serif;
-            color: #253246;
-            background: #e9edf2;
-            font-synthesis: none;
+            color-scheme: light;
+            --bg: #f7f6fc;
+            --surface: rgba(255, 255, 255, .82);
+            --surface-solid: #fff;
+            --text: #211d32;
+            --muted: #696579;
+            --line: #e8e4f0;
+            --accent: #6842d5;
+            --accent-dark: #5031b5;
+            --accent-soft: #eee9ff;
+            --green: #168457;
+            --shadow: 0 18px 48px rgba(58, 43, 104, .10);
+            font-family: "Segoe UI", Inter, Arial, sans-serif;
+            scroll-behavior: smooth;
         }
         * { box-sizing: border-box; }
-        body { margin: 0; min-width: 320px; }
-        #map { position: fixed; inset: 0; z-index: 0; background: #e9edf2; }
-        .leaflet-container { font: inherit; }
-        .topbar {
-            position: fixed; top: 14px; left: 14px; z-index: 800;
-            display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 28px);
-            padding: 11px 16px; border: 1px solid #dce2e9; border-radius: 10px;
-            background: rgba(255,255,255,.97); box-shadow: 0 4px 18px #17212e24;
+        body {
+            min-width: 320px;
+            margin: 0;
+            color: var(--text);
+            background:
+                radial-gradient(ellipse at 81% 21%, rgba(201, 184, 255, .26), transparent 28rem),
+                linear-gradient(rgba(105, 88, 159, .035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(105, 88, 159, .035) 1px, transparent 1px),
+                var(--bg);
+            background-size: auto, 48px 48px, 48px 48px, auto;
+            line-height: 1.6;
         }
-        .logo { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 8px; background: #9f111b; color: #fff; font-size: 12px; font-weight: 800; }
-        .topbar h1 { margin: 0; font-size: 16px; line-height: 1.2; }
-        .topbar p { margin: 3px 0 0; color: #64748b; font-size: 12px; }
-        .panel {
-            position: fixed; top: 82px; bottom: 18px; left: 14px; z-index: 700;
-            width: 330px; max-width: calc(100vw - 28px); overflow: auto;
-            padding: 16px; border: 1px solid #dce2e9; border-radius: 10px;
-            background: rgba(255,255,255,.97); box-shadow: 0 4px 18px #17212e24;
+        a { color: inherit; }
+        button, a { -webkit-tap-highlight-color: transparent; }
+        button:focus-visible, a:focus-visible { outline: 3px solid #a98aff; outline-offset: 4px; }
+        .skip-link { position: fixed; z-index: 20; top: 8px; left: 8px; transform: translateY(-150%); padding: 10px 14px; border-radius: 8px; color: #fff; background: var(--accent-dark); }
+        .skip-link:focus { transform: translateY(0); }
+        .site-header { position: sticky; z-index: 10; top: 0; padding: 14px 24px; backdrop-filter: blur(16px); background: color-mix(in srgb, var(--bg) 88%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--line) 80%, transparent); }
+        .header-inner { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; width: min(1360px, 100%); margin: auto; }
+        .brand { width: max-content; text-decoration: none; font-size: 22px; font-weight: 850; letter-spacing: -.06em; }
+        .brand span { color: var(--accent); }
+        .nav { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); box-shadow: var(--shadow); }
+        .nav a { padding: 8px 13px; border-radius: 999px; color: var(--muted); font-size: 13px; font-weight: 650; text-decoration: none; white-space: nowrap; transition: color .2s, background .2s; }
+        .nav a:hover { color: var(--accent); background: var(--accent-soft); }
+        .header-actions { display: flex; justify-content: flex-end; gap: 9px; }
+        .icon-button { display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 50%; color: var(--text); background: var(--surface); cursor: pointer; }
+        .icon-button svg { width: 18px; height: 18px; }
+        .hero { display: grid; min-height: min(790px, calc(100svh - 72px)); place-items: center; padding: 64px 24px 54px; }
+        .hero-inner { display: grid; grid-template-columns: minmax(320px, .88fr) minmax(420px, 1.12fr); align-items: center; gap: clamp(44px, 7vw, 112px); width: min(1120px, 100%); }
+        .hero-art-wrap { position: relative; width: min(100%, 470px); justify-self: center; }
+        .hero-photo { display: block; width: 100%; aspect-ratio: 1; border: 8px solid var(--accent); border-radius: 50%; object-fit: cover; box-shadow: 0 20px 36px rgba(104, 66, 213, .20), 0 0 0 10px rgba(104, 66, 213, .12); }
+        .floating-tag { position: absolute; display: flex; align-items: center; gap: 9px; padding: 11px 15px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-solid); box-shadow: var(--shadow); color: var(--muted); font-size: 12px; font-weight: 700; white-space: nowrap; }
+        .floating-tag svg { width: 17px; height: 17px; color: var(--accent); }
+        .tag-top { top: 13%; right: -8%; }
+        .tag-bottom { bottom: 12%; left: -8%; }
+        .hero-copy { max-width: 620px; }
+        .eyebrow { display: inline-flex; align-items: center; gap: 9px; margin: 0 0 22px; padding: 9px 15px; border: 1px solid #cce9d8; border-radius: 999px; color: #285d43; background: #eff9f2; font-size: 13px; font-weight: 700; }
+        .eyebrow::before { width: 9px; height: 9px; border-radius: 50%; background: #38bd79; content: ""; }
+        .hello { margin: 0 0 2px; color: var(--muted); font-size: clamp(17px, 2vw, 23px); }
+        h1 { margin: 0; color: var(--accent); font-size: clamp(48px, 6.3vw, 88px); font-weight: 850; letter-spacing: -.065em; line-height: .98; }
+        .hero-role { max-width: 660px; margin: 18px 0 9px; font-size: clamp(23px, 3vw, 38px); font-weight: 800; letter-spacing: -.04em; line-height: 1.13; }
+        .location { display: inline-flex; align-items: center; gap: 8px; margin: 7px 0 0; color: var(--muted); font-weight: 650; }
+        .location svg { width: 18px; height: 18px; color: var(--accent); }
+        .hero-description { max-width: 600px; margin: 22px 0 0; color: var(--muted); font-size: 17px; line-height: 1.75; }
+        .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+        .button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 50px; padding: 12px 20px; border: 1px solid transparent; border-radius: 10px; font-weight: 750; text-decoration: none; transition: transform .2s, background .2s, box-shadow .2s; }
+        .button:hover { transform: translateY(-2px); }
+        .button-primary { color: #fff; background: var(--accent); box-shadow: 0 9px 22px rgba(104, 66, 213, .25); }
+        .button-primary:hover { background: var(--accent-dark); }
+        .button-secondary { border-color: var(--line); color: var(--text); background: var(--surface-solid); }
+        .button svg { width: 17px; height: 17px; }
+        .social-rail { position: absolute; top: 50%; left: max(24px, calc((100vw - 1360px) / 2)); display: grid; gap: 12px; transform: translateY(-50%); }
+        .social-rail a { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 50%; color: var(--muted); background: var(--surface); transition: color .2s, transform .2s; }
+        .social-rail a:hover { color: var(--accent); transform: translateY(-2px); }
+        .social-rail svg { width: 18px; height: 18px; }
+        .scroll-cue { display: grid; place-items: center; width: 26px; height: 48px; margin: 26px auto 0; border: 2px solid #8c85a5; border-radius: 999px; color: var(--accent); text-decoration: none; }
+        .scroll-cue span { width: 4px; height: 9px; border-radius: 4px; background: var(--accent); animation: scroll 1.6s ease-in-out infinite; }
+        @keyframes scroll { 0%,100% { transform: translateY(-5px); opacity: .4; } 50% { transform: translateY(5px); opacity: 1; } }
+        main { overflow: hidden; }
+        .section { padding: 108px 24px; scroll-margin-top: 80px; }
+        .section:nth-of-type(even) { background: color-mix(in srgb, var(--surface-solid) 50%, transparent); }
+        .section-inner { width: min(1120px, 100%); margin: auto; }
+        .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 36px; }
+        .section-kicker { margin: 0 0 8px; color: var(--accent); font-size: 12px; font-weight: 850; letter-spacing: .15em; text-transform: uppercase; }
+        h2 { margin: 0; font-size: clamp(32px, 4vw, 48px); letter-spacing: -.05em; line-height: 1.1; }
+        .section-heading > p { max-width: 440px; margin: 0; color: var(--muted); }
+        .about-grid { display: grid; grid-template-columns: 1.2fr .8fr; gap: 26px; }
+        .about-card, .stat-card, .timeline-card, .skill-card, .project-card, .contact-card { border: 1px solid var(--line); border-radius: 18px; background: var(--surface-solid); box-shadow: var(--shadow); }
+        .about-card { padding: clamp(24px, 4vw, 42px); }
+        .about-card p { margin: 0 0 15px; color: var(--muted); font-size: 16px; }
+        .about-card p:last-child { margin-bottom: 0; }
+        .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+        .stat-card { display: flex; min-height: 142px; flex-direction: column; justify-content: center; padding: 22px; }
+        .stat-number { color: var(--accent); font-size: 36px; font-weight: 850; letter-spacing: -.06em; line-height: 1; }
+        .stat-label { margin-top: 10px; color: var(--muted); font-size: 13px; font-weight: 650; }
+        .timeline-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+        .timeline-column h3 { margin: 0 0 18px; font-size: 19px; }
+        .timeline { display: grid; gap: 13px; }
+        .timeline-card { position: relative; padding: 22px 23px 22px 27px; }
+        .timeline-card::before { position: absolute; top: 25px; bottom: 25px; left: 0; width: 3px; border-radius: 3px; background: var(--accent); content: ""; }
+        .timeline-date { margin: 0 0 7px; color: var(--accent); font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+        .timeline-card h4 { margin: 0; font-size: 16px; line-height: 1.35; }
+        .timeline-place { margin: 4px 0 9px; color: var(--text); font-size: 13px; font-weight: 650; }
+        .timeline-card p:last-child { margin: 0; color: var(--muted); font-size: 13px; }
+        .projects-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+        .project-card { overflow: hidden; transition: transform .25s, box-shadow .25s; }
+        .project-card:hover { transform: translateY(-5px); box-shadow: 0 24px 54px rgba(58, 43, 104, .15); }
+        .project-visual { position: relative; display: grid; min-height: 250px; place-items: center; overflow: hidden; background: #e9e7f3; }
+        .project-visual::before, .project-visual::after { position: absolute; width: 360px; height: 360px; border: 1px solid rgba(104,66,213,.15); border-radius: 46% 54% 62% 38%; content: ""; transform: rotate(25deg); }
+        .project-visual::after { width: 270px; height: 270px; transform: rotate(-20deg); }
+        .project-visual svg { position: relative; z-index: 1; width: min(74%, 390px); height: auto; }
+        .project-visual.morocco { background: linear-gradient(135deg, #e8f4f1, #e8e3f5); }
+        .project-visual.france { background: linear-gradient(135deg, #e7edfb, #f0e9fa); }
+        .project-content { padding: 25px 27px 27px; }
+        .project-topline { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+        .project-category { color: var(--accent); font-size: 11px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
+        .project-index { color: #aaa2bc; font-size: 12px; font-weight: 800; }
+        .project-card h3 { margin: 11px 0 9px; font-size: 22px; letter-spacing: -.03em; line-height: 1.25; }
+        .project-card p { margin: 0; color: var(--muted); font-size: 14px; }
+        .tag-list { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 17px; }
+        .tag { padding: 5px 9px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: var(--bg); font-size: 11px; font-weight: 700; }
+        .project-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 21px; color: var(--accent); font-size: 13px; font-weight: 800; text-decoration: none; }
+        .project-link svg { width: 16px; height: 16px; transition: transform .2s; }
+        .project-link:hover svg { transform: translateX(4px); }
+        .skills-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+        .skill-card { min-height: 190px; padding: 23px; }
+        .skill-icon { display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 16px; border-radius: 12px; color: var(--accent); background: var(--accent-soft); }
+        .skill-icon svg { width: 22px; height: 22px; }
+        .skill-card h3 { margin: 0 0 8px; font-size: 16px; }
+        .skill-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.65; }
+        .toolset { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 25px; }
+        .toolset span { padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); background: var(--surface-solid); font-size: 12px; font-weight: 700; }
+        .languages { display: flex; flex-wrap: wrap; gap: 13px; margin-top: 28px; }
+        .language { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-solid); font-size: 13px; }
+        .language strong { color: var(--accent); }
+        .contact-card { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 32px; padding: clamp(26px, 5vw, 54px); }
+        .contact-card p { max-width: 620px; margin: 13px 0 0; color: var(--muted); }
+        .contact-links { display: grid; gap: 11px; }
+        .contact-links a { display: flex; align-items: center; gap: 10px; color: var(--text); font-size: 14px; font-weight: 700; text-decoration: none; }
+        .contact-links a:hover { color: var(--accent); }
+        .contact-links svg { width: 18px; height: 18px; color: var(--accent); }
+        .footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; width: min(1120px, calc(100% - 48px)); margin: auto; padding: 27px 0 34px; color: var(--muted); font-size: 12px; }
+        .footer a { color: var(--accent); font-weight: 700; text-decoration: none; }
+        [data-theme="dark"] {
+            color-scheme: dark;
+            --bg: #151321;
+            --surface: rgba(35, 31, 51, .88);
+            --surface-solid: #211e30;
+            --text: #f3f0fa;
+            --muted: #b7b1c7;
+            --line: #39344b;
+            --accent: #ad94ff;
+            --accent-dark: #8e70ee;
+            --accent-soft: #332b4c;
+            --green: #54ca91;
+            --shadow: 0 18px 48px rgba(0, 0, 0, .2);
+            background:
+                radial-gradient(ellipse at 81% 21%, rgba(105, 78, 186, .19), transparent 28rem),
+                linear-gradient(rgba(180, 164, 226, .035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(180, 164, 226, .035) 1px, transparent 1px),
+                var(--bg);
+            background-size: auto, 48px 48px, 48px 48px, auto;
         }
-        .panel h2 { margin: 0 0 10px; font-size: 14px; }
-        .panel h3 { margin: 15px 0 8px; font-size: 13px; }
-        .intro { margin: 0 0 12px; color: #526174; font-size: 12px; line-height: 1.5; }
-        .notice {
-            margin: 12px 0; padding: 10px; border: 1px solid #f1d59c; border-radius: 7px;
-            background: #fff8e8; color: #744c08; font-size: 11px; line-height: 1.45;
+        [data-theme="dark"] .eyebrow { border-color: #315946; color: #b0ebc8; background: #1d3028; }
+        [data-theme="dark"] .project-visual.morocco { background: linear-gradient(135deg, #203b38, #302941); }
+        [data-theme="dark"] .project-visual.france { background: linear-gradient(135deg, #252e49, #342941); }
+        [data-theme="dark"] .tag, [data-theme="dark"] .toolset span, [data-theme="dark"] .language { background: #292538; }
+        @media (max-width: 1080px) {
+            .social-rail { display: none; }
+            .hero-inner { gap: 48px; }
+            .tag-top { right: -2%; }
+            .tag-bottom { left: -2%; }
         }
-        .field { display: grid; gap: 5px; margin: 9px 0; }
-        .field label, .layer-option { font-size: 12px; font-weight: 650; }
-        input[type="text"], input[type="search"], select, textarea {
-            width: 100%; min-height: 36px; padding: 8px 10px; border: 1px solid #cbd5e1;
-            border-radius: 6px; background: #fff; color: #253246; font: inherit; font-size: 13px;
+        @media (max-width: 760px) {
+            .site-header { padding: 10px 14px; }
+            .header-inner { grid-template-columns: 1fr auto; gap: 8px; }
+            .brand { font-size: 20px; }
+            .header-actions { grid-column: 2; grid-row: 1; }
+            .nav { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; overflow-x: auto; padding: 4px; box-shadow: none; scrollbar-width: none; }
+            .nav::-webkit-scrollbar { display: none; }
+            .nav a { padding: 7px 11px; font-size: 12px; }
+            .hero { min-height: auto; padding: 48px 20px 38px; }
+            .hero-inner { grid-template-columns: 1fr; gap: 37px; text-align: center; }
+            .hero-art-wrap { width: min(75vw, 340px); }
+            .floating-tag { padding: 8px 11px; font-size: 10px; }
+            .tag-top { right: -12%; }
+            .tag-bottom { left: -12%; }
+            .eyebrow { margin-bottom: 16px; font-size: 11px; }
+            h1 { font-size: clamp(49px, 13vw, 76px); }
+            .hero-role { margin: 13px 0 6px; font-size: clamp(22px, 6vw, 31px); }
+            .location { justify-content: center; font-size: 13px; }
+            .hero-description { margin: 17px auto 0; font-size: 15px; }
+            .hero-actions { justify-content: center; margin-top: 23px; }
+            .button { min-height: 46px; padding: 10px 15px; font-size: 13px; }
+            .scroll-cue { margin-top: 13px; }
+            .section { padding: 72px 19px; }
+            .section-heading { display: block; margin-bottom: 25px; }
+            .section-heading > p { margin-top: 13px; }
+            .about-grid, .timeline-grid, .projects-grid { grid-template-columns: 1fr; }
+            .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .stat-card { min-height: 115px; padding: 17px; }
+            .stat-number { font-size: 30px; }
+            .timeline-grid { gap: 30px; }
+            .project-visual { min-height: 205px; }
+            .project-content { padding: 21px; }
+            .skills-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+            .skill-card { min-height: 0; padding: 17px; }
+            .skill-card h3 { font-size: 14px; }
+            .skill-card p { font-size: 12px; }
+            .contact-card { grid-template-columns: 1fr; gap: 24px; }
+            .contact-links { justify-items: start; }
+            .footer { width: calc(100% - 38px); flex-wrap: wrap; }
         }
-        textarea { min-height: 58px; resize: vertical; }
-        input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, .file-button:focus-within {
-            outline: 3px solid #5a94dc; outline-offset: 2px;
-        }
-        .button-row { display: flex; flex-wrap: wrap; gap: 7px; margin: 8px 0; }
-        button, .file-button {
-            display: inline-flex; align-items: center; justify-content: center; min-height: 34px;
-            padding: 7px 10px; border: 1px solid #d1d9e2; border-radius: 6px;
-            background: #fff; color: #26364a; font: inherit; font-size: 12px; font-weight: 650; cursor: pointer;
-        }
-        button:hover, .file-button:hover { background: #f3f6f9; }
-        button.primary { border-color: #9f111b; background: #9f111b; color: #fff; }
-        button.primary:hover { background: #7e0e16; }
-        button.active { border-color: #9f111b; box-shadow: 0 0 0 2px #9f111b25; }
-        button:disabled { cursor: not-allowed; opacity: .5; }
-        .panel-toggle { position: fixed; top: 82px; right: 14px; z-index: 800; min-height: 38px; box-shadow: 0 3px 12px #17212e24; }
-        .layer-list { display: grid; gap: 8px; }
-        .layer-option { display: flex; align-items: center; gap: 8px; font-weight: 500; }
-        .layer-option input { accent-color: #9f111b; }
-        .swatch { display: inline-block; width: 18px; height: 4px; border-radius: 3px; }
-        .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
-        .line-existing { background: #35485e; }
-        .line-operating { background: #18855b; }
-        .line-current { background: #d13b36; }
-        .line-maintenance { background: #d28a18; }
-        .line-planned { background: #8a55b5; }
-        .line-complete { background: #18855b; }
-        .measurement, .message { margin: 9px 0; padding: 9px; border-radius: 6px; font-size: 12px; line-height: 1.4; }
-        .measurement { background: #eef5ff; color: #1d4b84; font-weight: 700; }
-        .message { background: #eef2f6; color: #435267; }
-        .message.error { background: #fff0ef; color: #a5261f; }
-        .work-list { display: grid; gap: 7px; margin: 8px 0; }
-        .work-item { display: flex; align-items: center; gap: 7px; padding: 7px; border: 1px solid #e1e7ee; border-radius: 6px; }
-        .work-item .work-title { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 12px; cursor: pointer; }
-        .work-item small { display: block; margin-top: 2px; color: #64748b; font-size: 10px; }
-        .work-item button { min-height: 28px; padding: 4px 7px; }
-        .file-button input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
-        .attribution-note { margin: 12px 0 0; color: #64748b; font-size: 10px; line-height: 1.4; }
-        .leaflet-control-attribution { font-size: 10px !important; }
-        @media (max-width: 650px) {
-            .topbar { top: 8px; left: 8px; padding: 8px 10px; }
-            .topbar h1 { font-size: 14px; }
-            .topbar p { font-size: 10px; }
-            .panel {
-                top: auto; right: 8px; bottom: 8px; left: 8px; width: auto;
-                max-width: none; max-height: 43vh; padding: 12px;
-            }
-            .panel h3 { margin-top: 11px; }
-            .leaflet-bottom { bottom: 44vh; }
-            .leaflet-left { left: 8px; }
-            .leaflet-top { top: 58px; }
-            .panel-toggle { top: 8px; right: 8px; }
+        @media (max-width: 430px) {
+            .skills-grid { grid-template-columns: 1fr; }
+            .hero-art-wrap { width: min(72vw, 290px); }
+            .floating-tag { font-size: 9px; }
+            .contact-links a { font-size: 12px; }
         }
         @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+            *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
         }
     </style>
 </head>
 <body>
-    <div id="map" aria-label="Carte interactive du corridor ferroviaire Kénitra–Marrakech"></div>
-    <header class="topbar">
-        <div class="logo" aria-hidden="true">ONCF</div>
-        <div>
-            <h1>Corridor ferroviaire Kénitra – Marrakech</h1>
-            <p>Carte de travail · gares, distances et suivi des interventions</p>
+    <a class="skip-link" href="#contenu">Aller au contenu</a>
+    <header class="site-header">
+        <div class="header-inner">
+            <a class="brand" href="#accueil" aria-label="Matcheni Bamba, accueil">Matcheni<span>.</span></a>
+            <nav class="nav" aria-label="Navigation principale">
+                <a href="#apropos">À propos</a>
+                <a href="#parcours">Parcours</a>
+                <a href="#projets">Projets</a>
+                <a href="#competences">Compétences</a>
+                <a href="#contact">Contact</a>
+            </nav>
+            <div class="header-actions">
+                <button class="icon-button" id="theme-toggle" type="button" aria-label="Activer le thème sombre" aria-pressed="false">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M20.2 15.1A8.5 8.5 0 0 1 8.9 3.8 8.6 8.6 0 1 0 20.2 15.1Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
         </div>
     </header>
-    <button id="toggle-panel" class="panel-toggle" type="button" aria-controls="tools-panel" aria-expanded="true">Masquer les outils</button>
-
-    <aside id="tools-panel" class="panel" aria-label="Outils cartographiques">
-        <section>
-            <h2>Rechercher une gare</h2>
-            <div class="field">
-                <label for="station-search">Nom de la gare</label>
-                <input id="station-search" type="search" list="station-list" placeholder="Ex. Rabat Agdal" autocomplete="off">
-                <datalist id="station-list"></datalist>
+    <main id="contenu">
+        <section class="hero" id="accueil" aria-labelledby="hero-title">
+            <div class="hero-inner">
+                <div class="hero-art-wrap">
+                    <div class="floating-tag tag-top">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s7-6.1 7-12a7 7 0 1 0-14 0c0 5.9 7 12 7 12Z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="9" r="2.3" stroke="currentColor" stroke-width="1.8"/></svg>
+                        Topographie · SIG
+                    </div>
+                    <div class="floating-tag tag-bottom">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 18.5 9 13l3.5 3 7.5-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4" cy="18.5" r="1.5" fill="currentColor"/><circle cx="20" cy="7" r="1.5" fill="currentColor"/></svg>
+                        Données terrain &amp; géonumérique
+                    </div>
+                    <img class="hero-photo" src="assets/matcheni-bamba-photo.jpg" alt="Matcheni Bamba en tenue de chantier, casque et gilet haute visibilité" width="320" height="320">
+                </div>
+                <div class="hero-copy">
+                    <p class="eyebrow">Génie civil · Topographie · Géonumérique</p>
+                    <p class="hello">Bonjour, je suis</p>
+                    <h1 id="hero-title">Matcheni<br>Bamba</h1>
+                    <p class="hero-role">Élève ingénieure en topographie &amp; géonumérique</p>
+                    <p class="location">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="10" r="2.2" stroke="currentColor" stroke-width="1.8"/></svg>
+                        Cachan, Île-de-France · Permis B
+                    </p>
+                    <p class="hero-description">Élève ingénieure en dernière année à l’ESTP Paris, spécialisée en topographie et géonumérique. J’associe travail de terrain, données spatiales et outils numériques pour produire des informations géographiques utiles aux projets.</p>
+                    <div class="hero-actions">
+                        <a class="button button-primary" href="assets/CV-Matcheni-Bamba.pdf" download>
+                            Télécharger mon CV
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </a>
+                        <a class="button button-secondary" href="#projets">Découvrir mes projets</a>
+                    </div>
+                </div>
             </div>
-            <div class="button-row">
-                <button id="search-button" class="primary" type="button">Centrer sur la gare</button>
-                <button id="clear-search" type="button">Effacer</button>
-            </div>
+            <a class="scroll-cue" href="#apropos" aria-label="Défiler vers la section à propos"><span></span></a>
         </section>
-
-        <div class="notice">
-            <strong>Carte de travail, pas une source officielle.</strong>
-            Le fond OpenStreetMap donne le contexte géographique. Les gares sont des repères indicatifs ; importer le tracé RFN/ONCF validé et les données de travaux avant toute présentation comme état officiel.
+        <div class="social-rail" aria-label="Liens de contact">
+            <a href="mailto:matcheni.bamba@estp.fr" aria-label="Envoyer un e-mail">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="m4 7 8 6 8-6" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            </a>
+            <a href="tel:+33658366717" aria-label="Appeler Matcheni Bamba">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3H4a1 1 0 0 0-1 1c0 9.4 7.6 17 17 17a1 1 0 0 0 1-1v-3l-5-2-2 3a14 14 0 0 1-6-6l3-2-2-5H7Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <a href="https://github.com/BAMBA2025-Proj/WEBSIG" target="_blank" rel="noreferrer" aria-label="Dépôt GitHub des projets cartographiques">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .9a11.1 11.1 0 0 0-3.5 21.6c.55.1.75-.24.75-.53v-2.07c-3.07.67-3.72-1.3-3.72-1.3-.5-1.28-1.23-1.62-1.23-1.62-1-.68.08-.67.08-.67 1.1.08 1.68 1.13 1.68 1.13.98 1.68 2.56 1.2 3.18.92.1-.72.38-1.21.69-1.49-2.45-.28-5.03-1.23-5.03-5.47 0-1.21.43-2.2 1.13-2.98-.11-.28-.49-1.41.11-2.94 0 0 .92-.3 3.05 1.14a10.6 10.6 0 0 1 5.55 0c2.12-1.44 3.04-1.14 3.04-1.14.61 1.53.23 2.66.12 2.94.7.78 1.12 1.77 1.12 2.98 0 4.25-2.58 5.19-5.04 5.46.4.35.74 1.02.74 2.06v3.05c0 .29.2.63.76.53A11.1 11.1 0 0 0 12 .9Z"/></svg>
+            </a>
         </div>
-
-        <section>
-            <h3>Couches visibles</h3>
-            <div class="layer-list">
-                <label class="layer-option"><input id="show-stations" type="checkbox" checked> Gares repères</label>
-                <label class="layer-option"><input id="show-corridor" type="checkbox" checked> Axe d’étude entre gares (indicatif)</label>
-                <label class="layer-option"><input class="show-status" data-status="exploite" type="checkbox" checked><span class="swatch line-operating"></span> En exploitation</label>
-                <label class="layer-option"><input class="show-status" data-status="en-cours" type="checkbox" checked><span class="swatch line-current"></span> Travaux en cours</label>
-                <label class="layer-option"><input class="show-status" data-status="maintenance" type="checkbox" checked><span class="swatch line-maintenance"></span> Maintenance</label>
-                <label class="layer-option"><input class="show-status" data-status="previsionnel" type="checkbox" checked><span class="swatch line-planned"></span> Prévisionnel</label>
-                <label class="layer-option"><input class="show-status" data-status="termine" type="checkbox" checked><span class="swatch line-complete"></span> Réalisé / modifié</label>
+        <section class="section" id="apropos">
+            <div class="section-inner">
+                <div class="section-heading">
+                    <div><p class="section-kicker">À propos</p><h2>La géomatique,<br>du terrain à la carte.</h2></div>
+                    <p>Des mesures fiables et des données bien structurées sont le point de départ de cartes et d’outils utiles.</p>
+                </div>
+                <div class="about-grid">
+                    <article class="about-card">
+                        <p>Mon parcours m’a conduite de l’INP-HB en Côte d’Ivoire à l’ESTP Paris, où je termine le cycle ingénieur en génie civil, spécialité <strong>Topographie &amp; Géonumérique</strong>.</p>
+                        <p>J’ai travaillé sur des relevés, l’implantation d’ouvrages, le géoréférencement et la production de plans. Je m’intéresse aussi au développement de scripts Python et à l’automatisation des tâches géomatiques.</p>
+                        <p>Ces deux cartes ferroviaires illustrent cette approche : associer données géographiques, interface cartographique et outils de collecte pour explorer et documenter un réseau.</p>
+                    </article>
+                    <div class="stat-grid" aria-label="Quelques repères">
+                        <div class="stat-card"><span class="stat-number">2</span><span class="stat-label">projets cartographiques interactifs</span></div>
+                        <div class="stat-card"><span class="stat-number">4</span><span class="stat-label">expériences professionnelles</span></div>
+                        <div class="stat-card"><span class="stat-number">2</span><span class="stat-label">formations en génie civil</span></div>
+                        <div class="stat-card"><span class="stat-number">2</span><span class="stat-label">pays d’études et d’expérience</span></div>
+                    </div>
+                </div>
             </div>
         </section>
-
-        <section>
-            <h3>Mesurer une distance</h3>
-            <p class="intro">Clique sur « Démarrer », puis sur au moins deux points de la carte. La distance suit les clics, pas le tracé exact des voies.</p>
-            <div class="button-row">
-                <button id="measure-start" type="button">Démarrer la mesure</button>
-                <button id="measure-finish" type="button" disabled>Terminer</button>
-                <button id="measure-clear" type="button">Effacer</button>
+        <section class="section" id="parcours">
+            <div class="section-inner">
+                <div class="section-heading">
+                    <div><p class="section-kicker">Parcours</p><h2>Études &amp; expériences</h2></div>
+                    <p>Une formation en topographie complétée par des missions de terrain, de production de plans et de suivi de travaux.</p>
+                </div>
+                <div class="timeline-grid">
+                    <div class="timeline-column">
+                        <h3>Expériences professionnelles</h3>
+                        <div class="timeline">
+                            <article class="timeline-card">
+                                <p class="timeline-date">Juin – décembre 2026 · 6 mois</p>
+                                <h4>Ingénieure topographe · Stage de fin d’études</h4>
+                                <p class="timeline-place">Eiffage Génie Civil · Choisy-le-Roi</p>
+                                <p>Suivi technique et contrôle d’exécution sur le terrain ; collecte, vérification et exploitation de données topographiques ; géoréférencement et mise à jour de plans pour les travaux de terrassement et de VRD.</p>
+                            </article>
+                            <article class="timeline-card">
+                                <p class="timeline-date">Juillet – septembre 2025 · 2 mois</p>
+                                <h4>Projeteuse / BIM</h4>
+                                <p class="timeline-place">TTGE France · Dijon</p>
+                                <p>Réalisation et mise à jour de plans topographiques et exploitation des données pour produire les livrables.</p>
+                            </article>
+                            <article class="timeline-card">
+                                <p class="timeline-date">Juin – juillet 2024 · 1 mois</p>
+                                <h4>Stagiaire ouvrière</h4>
+                                <p class="timeline-place">Eiffage Construction · Dijon</p>
+                                <p>Observation des travaux de gros œuvre, suivi de chantier et participation aux opérations d’implantation.</p>
+                            </article>
+                            <article class="timeline-card">
+                                <p class="timeline-date">2022 – 2023 · 1 an</p>
+                                <h4>Technicienne topographe</h4>
+                                <p class="timeline-place">PFO Africa · Côte d’Ivoire</p>
+                                <p>Relevés topographiques, implantation d’ouvrages, traitement de données GPS et production de plans topographiques.</p>
+                            </article>
+                        </div>
+                    </div>
+                    <div class="timeline-column">
+                        <h3>Formation</h3>
+                        <div class="timeline">
+                            <article class="timeline-card">
+                                <p class="timeline-date">Depuis 2023</p>
+                                <h4>Cycle ingénieur en génie civil · Topographie &amp; Géonumérique</h4>
+                                <p class="timeline-place">ESTP Paris · Cachan</p>
+                                <p>Topographie, géomatique, gestion de données spatiales, cartographie et outils numériques appliqués au génie civil.</p>
+                            </article>
+                            <article class="timeline-card">
+                                <p class="timeline-date">2019 – 2022</p>
+                                <h4>Technicienne supérieure en génie civil · Option Géomètre</h4>
+                                <p class="timeline-place">INP-HB · Côte d’Ivoire</p>
+                                <p>Formation technique en génie civil, topographie et travaux de géomètre.</p>
+                            </article>
+                            <article class="timeline-card">
+                                <p class="timeline-date">Langues</p>
+                                <h4>Français courant · Anglais intermédiaire</h4>
+                                <p class="timeline-place">Communication et collaboration en contexte professionnel</p>
+                                <p>Permis B · mobilité en Île-de-France et déplacements selon les missions.</p>
+                            </article>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <output id="measure-result" class="measurement" aria-live="polite" hidden></output>
         </section>
-
-        <section>
-            <h3>Ajouter un événement réseau</h3>
-            <p class="intro">Dessine un linéaire, une zone ou place un point sur la carte. Les annotations sont locales et à valider avant diffusion.</p>
-            <div class="field">
-                <label for="work-title">Intitulé</label>
-                <input id="work-title" type="text" maxlength="100" placeholder="Ex. Renouvellement de voie">
-            </div>
-            <div class="field">
-                <label for="work-status">Statut</label>
-                <select id="work-status">
-                    <option value="exploite">En exploitation</option>
-                    <option value="en-cours">Travaux en cours</option>
-                    <option value="maintenance">Maintenance</option>
-                    <option value="previsionnel">Prévisionnel</option>
-                    <option value="termine">Réalisé / modifié</option>
-                </select>
-            </div>
-            <div class="field">
-                <label for="work-note">Note / référence (facultatif)</label>
-                <textarea id="work-note" maxlength="500" placeholder="Description, date ou référence à confirmer"></textarea>
-            </div>
-            <div class="button-row">
-                <button id="draw-line" class="primary" type="button">Tracer un linéaire</button>
-                <button id="draw-area" type="button">Tracer une zone</button>
-                <button id="add-point" type="button">Placer un point</button>
-            </div>
-            <div id="draw-controls" class="button-row" hidden>
-                <button id="undo-point" type="button">Annuler le dernier point</button>
-                <button id="save-drawing" class="primary" type="button" disabled>Enregistrer le tracé</button>
-                <button id="cancel-drawing" type="button">Annuler</button>
+        <section class="section" id="projets">
+            <div class="section-inner">
+                <div class="section-heading">
+                    <div><p class="section-kicker">Projets</p><h2>Des cartes pour explorer<br>et documenter le réseau.</h2></div>
+                    <p>Deux applications web cartographiques autour des infrastructures ferroviaires, de la recherche et de la collecte terrain.</p>
+                </div>
+                <div class="projects-grid">
+                    <article class="project-card">
+                        <div class="project-visual morocco" aria-label="Illustration du corridor ferroviaire marocain">
+                            <svg viewBox="0 0 420 205" role="img" aria-label="Axe ferroviaire stylisé au Maroc">
+                                <path d="M0 30c48 25 42 60 89 67s57-25 99-10 53 48 102 33 75-47 130-23" fill="none" stroke="#c4d5d4" stroke-width="2"/>
+                                <path d="M0 51c47 24 45 57 90 65s57-24 98-9 54 46 102 32 76-45 130-21" fill="none" stroke="#c4d5d4" stroke-width="2"/>
+                                <path d="M32 180c49-28 63-56 111-54s72 30 117 12 64-63 117-74" fill="none" stroke="#b9c7c5" stroke-width="2"/>
+                                <path d="M76 169c24-19 55-27 73-44s32-41 54-35 34 36 58 30 41-35 73-54 50-20 68-29" fill="none" stroke="#138f95" stroke-width="7" stroke-linecap="round"/>
+                                <path d="M76 169c24-19 55-27 73-44s32-41 54-35 34 36 58 30 41-35 73-54 50-20 68-29" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="2 9" stroke-linecap="round"/>
+                                <g fill="#fff" stroke="#168fc7" stroke-width="4"><circle cx="76" cy="169" r="8"/><circle cx="149" cy="127" r="8"/><circle cx="203" cy="90" r="8"/><circle cx="261" cy="120" r="8"/><circle cx="334" cy="66" r="8"/><circle cx="402" cy="37" r="8"/></g>
+                                <text x="30" y="194" fill="#566477" font-size="11" font-family="Arial">Marrakech</text><text x="361" y="23" fill="#566477" font-size="11" font-family="Arial">Kénitra</text>
+                            </svg>
+                        </div>
+                        <div class="project-content">
+                            <div class="project-topline"><span class="project-category">WebSIG · Maroc</span><span class="project-index">01 / 02</span></div>
+                            <h3>Carte ferroviaire Kénitra – Marrakech</h3>
+                            <p>Carte interactive du corridor et de ses gares repères, avec collecte locale d’événements, position GPS et photo. Les annotations peuvent être exportées pour être partagées.</p>
+                            <div class="tag-list"><span class="tag">Leaflet</span><span class="tag">Cartographie</span><span class="tag">Collecte terrain</span><span class="tag">GeoJSON</span></div>
+                            <a class="project-link" href="carte-presentation.html">Ouvrir le projet
+                                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </a>
+                        </div>
+                    </article>
+                    <article class="project-card">
+                        <div class="project-visual france" aria-label="Illustration du réseau ferroviaire français">
+                            <svg viewBox="0 0 420 205" role="img" aria-label="Réseau ferroviaire français stylisé">
+                                <path d="M72 25c54 0 48 45 93 47 39 2 35-34 79-32 45 3 39 45 91 42s45 48 12 65-64-8-93 23-75 14-90-8-70-4-94-28-47-70 2-109Z" fill="#f8f6ff" stroke="#d0c7e9" stroke-width="2"/>
+                                <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="m89 53 54 22 51-27 51 36 56-22 53 34" stroke="#30a77a" stroke-width="6"/>
+                                    <path d="m108 139 42-40 64 11 46-35 52 45 52-24" stroke="#e59b36" stroke-width="5"/>
+                                    <path d="m154 43 10 121m92-122-13 116M82 102l245-6" stroke="#d85c68" stroke-width="3" stroke-dasharray="5 7"/>
+                                </g>
+                                <g fill="#fff" stroke="#6842d5" stroke-width="3"><circle cx="89" cy="53" r="7"/><circle cx="143" cy="75" r="7"/><circle cx="194" cy="48" r="7"/><circle cx="245" cy="84" r="7"/><circle cx="301" cy="62" r="7"/><circle cx="354" cy="96" r="7"/></g>
+                                <g fill="#fff" stroke="#d85c68" stroke-width="3"><circle cx="108" cy="139" r="6"/><circle cx="150" cy="99" r="6"/><circle cx="214" cy="110" r="6"/><circle cx="260" cy="75" r="6"/><circle cx="312" cy="120" r="6"/></g>
+                            </svg>
+                        </div>
+                        <div class="project-content">
+                            <div class="project-topline"><span class="project-category">WebSIG · France</span><span class="project-index">02 / 02</span></div>
+                            <h3>Carte du réseau ferré français</h3>
+                            <p>Exploration de 1 638 tronçons avec recherche de villes et de lignes, filtres par état, mesure de distance et formulaire de constat géolocalisé avec photo.</p>
+                            <div class="tag-list"><span class="tag">Leaflet</span><span class="tag">GeoJSON</span><span class="tag">Recherche spatiale</span><span class="tag">KML · CSV</span></div>
+                            <a class="project-link" href="carte-ferroviaire-france.html">Ouvrir le projet
+                                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </a>
+                        </div>
+                    </article>
+                </div>
             </div>
         </section>
-
-        <section>
-            <h3>Annotations de cette carte</h3>
-            <div id="work-list" class="work-list"><p class="intro">Aucune annotation enregistrée.</p></div>
-            <div class="button-row">
-                <button id="export-data" type="button">Exporter GeoJSON</button>
-                <label class="file-button">Importer GeoJSON
-                    <input id="import-data" type="file" accept=".geojson,.json,application/geo+json,application/json">
-                </label>
+        <section class="section" id="competences">
+            <div class="section-inner">
+                <div class="section-heading">
+                    <div><p class="section-kicker">Compétences</p><h2>Des savoir-faire<br>complémentaires.</h2></div>
+                    <p>Des compétences acquises en formation et mises en pratique en entreprise et dans des projets cartographiques.</p>
+                </div>
+                <div class="skills-grid">
+                    <article class="skill-card">
+                        <div class="skill-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 3v15m6-12v15" stroke="currentColor" stroke-width="1.7"/></svg></div>
+                        <h3>SIG &amp; données spatiales</h3><p>Structuration, géoréférencement, analyse spatiale et cartographie de données géographiques.</p>
+                    </article>
+                    <article class="skill-card">
+                        <div class="skill-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 19h16M6 16l3-8 3 5 3-9 3 12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="8" r="1.4" fill="currentColor"/></svg></div>
+                        <h3>Topographie &amp; terrain</h3><p>Relevés, implantation, polygonale, contrôle des mesures et traitement de données GPS.</p>
+                    </article>
+                    <article class="skill-card">
+                        <div class="skill-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h5m-5 4h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                        <h3>Automatisation SIG</h3><p>Scripts de traitement de données spatiales, automatisation de tâches et bases de PyQGIS.</p>
+                    </article>
+                    <article class="skill-card">
+                        <div class="skill-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 20V8l8-4 8 4v12M8 20v-5h8v5M8 9h.01M12 9h.01M16 9h.01M8 12h.01M12 12h.01M16 12h.01" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                        <h3>Génie civil &amp; VRD</h3><p>Suivi d’exécution, contrôle technique, terrassement et production de livrables chantier.</p>
+                    </article>
+                    <article class="skill-card">
+                        <div class="skill-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h5m-1 6v-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                        <h3>CAO &amp; BIM</h3><p>Production et mise à jour de plans topographiques et exploitation de données pour les livrables.</p>
+                    </article>
+                    <article class="skill-card">
+                        <div class="skill-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 8 4 12l4 4m8-8 4 4-4 4m-2-11-4 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                        <h3>Cartographie web</h3><p>Conception d’interfaces cartographiques et d’outils de collecte et d’export de données.</p>
+                    </article>
+                </div>
+                <div class="toolset" aria-label="Outils maîtrisés ou étudiés">
+                    <span>QGIS</span><span>ArcGIS Pro</span><span>Python</span><span>PyQGIS · bases</span><span>AutoCAD</span><span>Covadis</span><span>Civil 3D</span><span>Revit</span><span>Leaflet</span>
+                </div>
+                <div class="languages" aria-label="Langues">
+                    <span class="language"><strong>Français</strong> courant</span>
+                    <span class="language"><strong>Anglais</strong> intermédiaire</span>
+                </div>
             </div>
-            <p class="attribution-note">Les annotations sont conservées dans ce navigateur ; exporte-les en GeoJSON pour les partager. L’import attend des géométries GeoJSON WGS84 (EPSG:4326) et des propriétés <code>title</code> et <code>status</code> : <code>exploite</code>, <code>en-cours</code>, <code>maintenance</code>, <code>previsionnel</code> ou <code>termine</code>.</p>
         </section>
-        <p id="app-message" class="message" role="status" aria-live="polite">Chargement de la carte…</p>
-    </aside>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+        <section class="section" id="contact">
+            <div class="section-inner">
+                <div class="contact-card">
+                    <div>
+                        <p class="section-kicker">Contact</p>
+                        <h2>Parlons de vos projets<br>et du terrain.</h2>
+                        <p>Pour échanger au sujet de la topographie, des données géographiques ou d’une opportunité professionnelle, vous pouvez me contacter directement.</p>
+                        <div class="hero-actions"><a class="button button-primary" href="mailto:matcheni.bamba@estp.fr">Me contacter</a></div>
+                    </div>
+                    <div class="contact-links">
+                        <a href="mailto:matcheni.bamba@estp.fr"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="m4 7 8 6 8-6" stroke="currentColor" stroke-width="1.8"/></svg>matcheni.bamba@estp.fr</a>
+                        <a href="tel:+33658366717"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3H4a1 1 0 0 0-1 1c0 9.4 7.6 17 17 17a1 1 0 0 0 1-1v-3l-5-2-2 3a14 14 0 0 1-6-6l3-2-2-5H7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>+33 6 58 36 67 17</a>
+                        <a href="assets/CV-Matcheni-Bamba.pdf" download><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7m-7 4h7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Télécharger mon CV</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <footer class="footer">
+        <span>© <span id="year"></span> Matcheni Bamba · Portfolio</span>
+        <a href="#accueil">Retour en haut ↑</a>
+    </footer>
     <script>
-        (() => {
-            const message = document.getElementById('app-message');
-            const storageKey = 'websig-kenitra-marrakech-annotations-v1';
-            const statusLabels = {
-                exploite: 'En exploitation',
-                'en-cours': 'Travaux en cours',
-                maintenance: 'Maintenance',
-                previsionnel: 'Prévisionnel',
-                termine: 'Réalisé / modifié'
-            };
-            const statusColors = {
-                exploite: '#18855b',
-                'en-cours': '#d13b36',
-                maintenance: '#d28a18',
-                previsionnel: '#8a55b5',
-                termine: '#18855b'
-            };
-            const stations = [
-                { name: 'Kénitra', aliases: 'kenitra', lat: 34.261, lon: -6.580 },
-                { name: 'Salé Tabriquet', aliases: 'sale tabriquet', lat: 34.045, lon: -6.790 },
-                { name: 'Rabat Ville', aliases: 'rabat ville', lat: 34.022, lon: -6.839 },
-                { name: 'Rabat Agdal', aliases: 'rabat agdal', lat: 33.990, lon: -6.851 },
-                { name: 'Témara', aliases: 'temara', lat: 33.923, lon: -6.918 },
-                { name: 'Skhirat', aliases: 'skhirat', lat: 33.850, lon: -7.037 },
-                { name: 'Bouznika', aliases: 'bouznika', lat: 33.789, lon: -7.159 },
-                { name: 'Mohammédia', aliases: 'mohammedia', lat: 33.687, lon: -7.383 },
-                { name: 'Casa Voyageurs', aliases: 'casablanca casa voyageurs', lat: 33.597, lon: -7.590 },
-                { name: 'Casa Oasis', aliases: 'casablanca casa oasis', lat: 33.566, lon: -7.621 },
-                { name: 'Bouskoura', aliases: 'bouskoura', lat: 33.449, lon: -7.652 },
-                { name: 'Berrechid', aliases: 'berrechid', lat: 33.265, lon: -7.587 },
-                { name: 'Settat', aliases: 'settat', lat: 33.002, lon: -7.620 },
-                { name: 'Benguerir', aliases: 'ben guerir benguerir', lat: 32.235, lon: -7.951 },
-                { name: 'Marrakech', aliases: 'marrakech marrakesh', lat: 31.629, lon: -8.018 }
-            ];
-
-            function showMessage(text, isError = false) {
-                message.textContent = text;
-                message.classList.toggle('error', isError);
-            }
-
-            function normalize(text) {
-                return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr').trim();
-            }
-
-            if (!window.L) {
-                showMessage('La bibliothèque cartographique n’a pas pu être chargée. Vérifie la connexion Internet puis actualise la page.', true);
-                return;
-            }
-
-            const map = L.map('map', { zoomControl: false, doubleClickZoom: true }).setView([33.08, -7.36], 7);
-            L.control.zoom({ position: 'topright' }).addTo(map);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
-
-            const stationLayer = L.featureGroup().addTo(map);
-            const corridorLayer = L.featureGroup().addTo(map);
-            const draftLayer = L.featureGroup().addTo(map);
-            const workLayers = {};
-            Object.keys(statusLabels).forEach((status) => {
-                workLayers[status] = L.featureGroup().addTo(map);
-            });
-            const corridorPoints = stations.map((station) => [station.lat, station.lon]);
-            L.polyline(corridorPoints, {
-                color: '#263f5b', weight: 3, opacity: 0.72, dashArray: '3 8', lineCap: 'round'
-            }).bindTooltip('Liaison indicative entre gares — ce trait n’est pas le tracé RFN').addTo(corridorLayer);
-
-            const markersByStation = new Map();
-            stations.forEach((station) => {
-                const marker = L.circleMarker([station.lat, station.lon], {
-                    radius: 5, weight: 2, color: '#fff', fillColor: '#9f111b', fillOpacity: 1
-                }).bindPopup(`<strong>${station.name}</strong><br><small>Repère géographique indicatif</small>`);
-                marker.addTo(stationLayer);
-                markersByStation.set(station.name, marker);
-                const option = document.createElement('option');
-                option.value = station.name;
-                document.getElementById('station-list').appendChild(option);
-            });
-
-            let annotations = [];
-            let annotationLoadError = false;
-            let mode = null;
-            let drawingPoints = [];
-            let measurePoints = [];
-            let measureLine = null;
-            let measureMarkers = [];
-            const statusInputs = Array.from(document.querySelectorAll('.show-status'));
-
-            function validFeature(feature) {
-                if (!feature || feature.type !== 'Feature' || !feature.geometry) return false;
-                if (!['Point', 'LineString', 'MultiLineString', 'Polygon'].includes(feature.geometry.type)) return false;
-                if (!feature.properties || !Object.hasOwn(statusLabels, feature.properties.status)) return false;
-                if (typeof feature.properties.title !== 'string') return false;
-                const validPosition = (position) => Array.isArray(position)
-                    && position.length >= 2
-                    && Number.isFinite(position[0])
-                    && Number.isFinite(position[1])
-                    && Math.abs(position[0]) <= 180
-                    && Math.abs(position[1]) <= 90;
-                const coordinates = feature.geometry.coordinates;
-                if (feature.geometry.type === 'Point') return validPosition(coordinates);
-                if (feature.geometry.type === 'LineString') {
-                    return Array.isArray(coordinates) && coordinates.length >= 2 && coordinates.every(validPosition);
-                }
-                if (feature.geometry.type === 'MultiLineString') {
-                    return Array.isArray(coordinates)
-                        && coordinates.length > 0
-                        && coordinates.every((line) => Array.isArray(line) && line.length >= 2 && line.every(validPosition));
-                }
-                return Array.isArray(coordinates)
-                    && coordinates.length > 0
-                    && coordinates.every((ring) => Array.isArray(ring)
-                        && ring.length >= 4
-                        && ring.every(validPosition)
-                        && ring[0][0] === ring[ring.length - 1][0]
-                        && ring[0][1] === ring[ring.length - 1][1]);
-            }
-
-            function saveAnnotations() {
-                try {
-                    localStorage.setItem(storageKey, JSON.stringify(annotations));
-                } catch (error) {
-                    showMessage(`Impossible d’enregistrer les annotations dans ce navigateur : ${error.message}`, true);
-                    return false;
-                }
-                return true;
-            }
-
-            function featureStyle(feature) {
-                const color = statusColors[feature.properties.status];
-                return {
-                    color, weight: 6, opacity: 0.9, lineCap: 'round', lineJoin: 'round',
-                    fillColor: color, fillOpacity: feature.geometry.type === 'Polygon' ? 0.22 : 0
-                };
-            }
-
-            function renderAnnotations() {
-                Object.values(workLayers).forEach((layer) => layer.clearLayers());
-                annotations.forEach((feature, index) => {
-                    const layer = L.geoJSON(feature, {
-                        style: featureStyle,
-                        pointToLayer: (geoFeature, latlng) => L.circleMarker(latlng, {
-                            radius: 8, color: '#fff', weight: 2, fillColor: statusColors[geoFeature.properties.status], fillOpacity: 1
-                        }),
-                        onEachFeature: (geoFeature, layer) => {
-                            const props = geoFeature.properties;
-                            const note = props.note ? `<br>${escapeHtml(props.note)}` : '';
-                            layer.bindPopup(`<strong>${escapeHtml(props.title)}</strong><br>${statusLabels[props.status]}${note}`);
-                        }
-                    });
-                    if (document.querySelector(`.show-status[data-status="${feature.properties.status}"]`).checked) {
-                        layer.addTo(workLayers[feature.properties.status]);
-                    }
-                    layer.eachLayer((child) => child.featureIndex = index);
-                });
-                renderAnnotationList();
-            }
-
-            function escapeHtml(text) {
-                const element = document.createElement('span');
-                element.textContent = text;
-                return element.innerHTML;
-            }
-
-            function renderAnnotationList() {
-                const list = document.getElementById('work-list');
-                list.replaceChildren();
-                if (!annotations.length) {
-                    const empty = document.createElement('p');
-                    empty.className = 'intro';
-                    empty.textContent = 'Aucune annotation enregistrée.';
-                    list.appendChild(empty);
-                    return;
-                }
-                annotations.forEach((feature, index) => {
-                    const row = document.createElement('div');
-                    row.className = 'work-item';
-                    const dot = document.createElement('span');
-                    dot.className = 'legend-dot';
-                    dot.style.backgroundColor = statusColors[feature.properties.status];
-                    const title = document.createElement('span');
-                    title.className = 'work-title';
-                    title.textContent = feature.properties.title;
-                    const sub = document.createElement('small');
-                    sub.textContent = statusLabels[feature.properties.status];
-                    title.appendChild(sub);
-                    title.addEventListener('click', () => zoomToFeature(feature));
-                    const remove = document.createElement('button');
-                    remove.type = 'button';
-                    remove.textContent = 'Supprimer';
-                    remove.setAttribute('aria-label', `Supprimer ${feature.properties.title}`);
-                    remove.addEventListener('click', () => {
-                        const [removed] = annotations.splice(index, 1);
-                        if (saveAnnotations()) renderAnnotations();
-                        else annotations.splice(index, 0, removed);
-                    });
-                    row.append(dot, title, remove);
-                    list.appendChild(row);
-                });
-            }
-
-            function zoomToFeature(feature) {
-                if (feature.geometry.type === 'Point') {
-                    const [longitude, latitude] = feature.geometry.coordinates;
-                    map.setView([latitude, longitude], 13);
-                    return;
-                }
-                const layer = L.geoJSON(feature);
-                const bounds = layer.getBounds();
-                if (bounds.isValid()) map.fitBounds(bounds.pad(0.5), { maxZoom: 13 });
-            }
-
-            function featureFromPoints(points, geometryType) {
-                const title = document.getElementById('work-title').value.trim();
-                if (!title) {
-                    showMessage('Saisis un intitulé avant d’enregistrer.', true);
-                    document.getElementById('work-title').focus();
-                    return null;
-                }
-                const status = document.getElementById('work-status').value;
-                const note = document.getElementById('work-note').value.trim();
-                const coordinates = points.map((point) => [point.lng, point.lat]);
-                const geometryCoordinates = geometryType === 'Point'
-                    ? coordinates[0]
-                    : geometryType === 'Polygon'
-                        ? [[...coordinates, coordinates[0]]]
-                        : coordinates;
-                return {
-                    type: 'Feature',
-                    properties: { title, status, note, createdAt: new Date().toISOString() },
-                    geometry: {
-                        type: geometryType,
-                        coordinates: geometryCoordinates
-                    }
-                };
-            }
-
-            function stopMode() {
-                mode = null;
-                drawingPoints = [];
-                draftLayer.clearLayers();
-                document.getElementById('draw-controls').hidden = true;
-                document.getElementById('draw-line').classList.remove('active');
-                document.getElementById('draw-area').classList.remove('active');
-                document.getElementById('add-point').classList.remove('active');
-                document.getElementById('measure-start').classList.remove('active');
-                map.getContainer().style.cursor = '';
-                document.getElementById('measure-finish').disabled = true;
-            }
-
-            function saveFeature(feature) {
-                annotations.push(feature);
-                if (!saveAnnotations()) {
-                    annotations.pop();
-                    return;
-                }
-                renderAnnotations();
-                showMessage(`Annotation enregistrée : ${feature.properties.title}. Elle reste locale à ce navigateur.`);
-            }
-
-            function startLineDrawing() {
-                stopMode();
-                mode = 'line';
-                document.getElementById('draw-controls').hidden = false;
-                document.getElementById('draw-line').classList.add('active');
-                map.getContainer().style.cursor = 'crosshair';
-                showMessage('Clique sur la carte pour ajouter les points du linéaire, puis termine le tracé.');
-            }
-
-            function startAreaDrawing() {
-                stopMode();
-                mode = 'area';
-                document.getElementById('draw-controls').hidden = false;
-                document.getElementById('draw-area').classList.add('active');
-                map.getContainer().style.cursor = 'crosshair';
-                showMessage('Clique sur au moins trois points pour dessiner la zone, puis termine le tracé.');
-            }
-
-            function startPointDrawing() {
-                stopMode();
-                mode = 'point';
-                document.getElementById('add-point').classList.add('active');
-                map.getContainer().style.cursor = 'crosshair';
-                showMessage('Clique à l’emplacement de l’événement pour ajouter le point.');
-            }
-
-            function startMeasure() {
-                stopMode();
-                mode = 'measure';
-                measurePoints = [];
-                if (measureLine) map.removeLayer(measureLine);
-                measureMarkers.forEach((marker) => map.removeLayer(marker));
-                measureMarkers = [];
-                const result = document.getElementById('measure-result');
-                result.hidden = false;
-                result.textContent = 'Clique sur au moins deux points de la carte.';
-                document.getElementById('measure-start').classList.add('active');
-                document.getElementById('measure-finish').disabled = false;
-                map.getContainer().style.cursor = 'crosshair';
-                showMessage('Mode mesure actif. Ajoute des points, puis clique sur « Terminer ».');
-            }
-
-            map.on('click', (event) => {
-                if (mode === 'measure') {
-                    measurePoints.push(event.latlng);
-                    measureMarkers.push(L.circleMarker(event.latlng, {
-                        radius: 4, color: '#fff', weight: 2, fillColor: '#1266b1', fillOpacity: 1
-                    }).addTo(map));
-                    if (measureLine) map.removeLayer(measureLine);
-                    if (measurePoints.length > 1) {
-                        measureLine = L.polyline(measurePoints, { color: '#1266b1', weight: 3 }).addTo(map);
-                        const meters = measurePoints.slice(1).reduce((total, point, index) => {
-                            return total + map.distance(measurePoints[index], point);
-                        }, 0);
-                        document.getElementById('measure-result').textContent = `Distance mesurée : ${meters >= 1000 ? `${(meters / 1000).toFixed(2)} km` : `${Math.round(meters)} m`}`;
-                    }
-                    return;
-                }
-                if (mode === 'point') {
-                    const feature = featureFromPoints([event.latlng], 'Point');
-                    if (feature) {
-                        saveFeature(feature);
-                        stopMode();
-                    }
-                    return;
-                }
-                if (mode === 'line' || mode === 'area') {
-                    drawingPoints.push(event.latlng);
-                    L.circleMarker(event.latlng, { radius: 4, color: '#fff', weight: 2, fillColor: '#9f111b' }).addTo(draftLayer);
-                    if ((mode === 'line' && drawingPoints.length > 1) || (mode === 'area' && drawingPoints.length > 2)) {
-                        draftLayer.eachLayer((layer) => {
-                            if (layer instanceof L.Polyline && !(layer instanceof L.CircleMarker)) draftLayer.removeLayer(layer);
-                        });
-                        const style = { color: '#9f111b', weight: 4, dashArray: '7 5', fillColor: '#9f111b', fillOpacity: 0.15 };
-                        if (mode === 'area') L.polygon(drawingPoints, style).addTo(draftLayer);
-                        else L.polyline(drawingPoints, style).addTo(draftLayer);
-                    }
-                    document.getElementById('save-drawing').disabled = drawingPoints.length < (mode === 'area' ? 3 : 2);
-                    showMessage(`${drawingPoints.length} point${drawingPoints.length > 1 ? 's' : ''} dans le tracé.`);
-                }
-            });
-
-            document.getElementById('search-button').addEventListener('click', () => {
-                const query = normalize(document.getElementById('station-search').value);
-                if (!query) {
-                    showMessage('Saisis le nom d’une gare à rechercher.', true);
-                    return;
-                }
-                const station = stations.find((item) => normalize(`${item.name} ${item.aliases}`).includes(query));
-                if (!station) {
-                    showMessage('Gare introuvable dans les repères de l’axe. Essaie un autre nom.', true);
-                    return;
-                }
-                stationLayer.addTo(map);
-                document.getElementById('show-stations').checked = true;
-                map.setView([station.lat, station.lon], 12);
-                markersByStation.get(station.name).openPopup();
-                showMessage(`Carte centrée sur ${station.name}.`);
-            });
-            document.getElementById('station-search').addEventListener('keydown', (event) => {
-                if (event.key === 'Enter') document.getElementById('search-button').click();
-                if (event.key === 'Escape') event.currentTarget.value = '';
-            });
-            document.getElementById('clear-search').addEventListener('click', () => {
-                document.getElementById('station-search').value = '';
-                showMessage('Recherche effacée.');
-            });
-            document.getElementById('toggle-panel').addEventListener('click', (event) => {
-                const panel = document.getElementById('tools-panel');
-                const hidden = !panel.hidden;
-                panel.hidden = hidden;
-                event.currentTarget.setAttribute('aria-expanded', String(!hidden));
-                event.currentTarget.textContent = hidden ? 'Afficher les outils' : 'Masquer les outils';
-                window.setTimeout(() => map.invalidateSize(), 100);
-            });
-            document.getElementById('show-stations').addEventListener('change', (event) => {
-                if (event.currentTarget.checked) stationLayer.addTo(map);
-                else map.removeLayer(stationLayer);
-            });
-            document.getElementById('show-corridor').addEventListener('change', (event) => {
-                if (event.currentTarget.checked) corridorLayer.addTo(map);
-                else map.removeLayer(corridorLayer);
-            });
-            statusInputs.forEach((input) => input.addEventListener('change', renderAnnotations));
-
-            document.getElementById('measure-start').addEventListener('click', startMeasure);
-            document.getElementById('measure-finish').addEventListener('click', () => {
-                if (measurePoints.length < 2) {
-                    showMessage('Ajoute au moins deux points avant de terminer la mesure.', true);
-                    return;
-                }
-                stopMode();
-                showMessage('Mesure terminée. Clique sur « Effacer » pour la retirer.');
-            });
-            document.getElementById('measure-clear').addEventListener('click', () => {
-                if (measureLine) map.removeLayer(measureLine);
-                measureLine = null;
-                measureMarkers.forEach((marker) => map.removeLayer(marker));
-                measureMarkers = [];
-                measurePoints = [];
-                document.getElementById('measure-result').hidden = true;
-                if (mode === 'measure') stopMode();
-                showMessage('Mesure effacée.');
-            });
-            document.getElementById('draw-line').addEventListener('click', startLineDrawing);
-            document.getElementById('draw-area').addEventListener('click', startAreaDrawing);
-            document.getElementById('add-point').addEventListener('click', startPointDrawing);
-            document.getElementById('undo-point').addEventListener('click', () => {
-                if (!drawingPoints.length) return;
-                const drawingMode = mode;
-                const remaining = drawingPoints.slice(0, -1);
-                stopMode();
-                mode = drawingMode;
-                document.getElementById('draw-controls').hidden = false;
-                document.getElementById(drawingMode === 'area' ? 'draw-area' : 'draw-line').classList.add('active');
-                map.getContainer().style.cursor = 'crosshair';
-                drawingPoints = remaining;
-                remaining.forEach((point) => {
-                    L.circleMarker(point, { radius: 4, color: '#fff', weight: 2, fillColor: '#9f111b' }).addTo(draftLayer);
-                });
-                if ((drawingMode === 'line' && drawingPoints.length > 1) || (drawingMode === 'area' && drawingPoints.length > 2)) {
-                    const style = { color: '#9f111b', weight: 4, dashArray: '7 5', fillColor: '#9f111b', fillOpacity: 0.15 };
-                    if (drawingMode === 'area') L.polygon(drawingPoints, style).addTo(draftLayer);
-                    else L.polyline(drawingPoints, style).addTo(draftLayer);
-                }
-                document.getElementById('save-drawing').disabled = drawingPoints.length < (drawingMode === 'area' ? 3 : 2);
-                showMessage(`${drawingPoints.length} point${drawingPoints.length > 1 ? 's' : ''} dans le tracé.`);
-            });
-            document.getElementById('save-drawing').addEventListener('click', () => {
-                if (drawingPoints.length < (mode === 'area' ? 3 : 2)) return;
-                const geometryType = mode === 'area' ? 'Polygon' : 'LineString';
-                const feature = featureFromPoints(drawingPoints, geometryType);
-                if (feature) {
-                    saveFeature(feature);
-                    stopMode();
-                }
-            });
-            document.getElementById('cancel-drawing').addEventListener('click', () => {
-                stopMode();
-                showMessage('Tracé annulé.');
-            });
-
-            document.getElementById('export-data').addEventListener('click', () => {
-                const collection = { type: 'FeatureCollection', name: 'annotations-corridor-kenitra-marrakech', features: annotations };
-                const blob = new Blob([JSON.stringify(collection, null, 2)], { type: 'application/geo+json' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'annotations-kenitra-marrakech.geojson';
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-                showMessage('Fichier GeoJSON exporté.');
-            });
-            document.getElementById('import-data').addEventListener('change', async (event) => {
-                const input = event.currentTarget;
-                const file = input.files[0];
-                if (!file) return;
-                try {
-                    const parsed = JSON.parse(await file.text());
-                    const features = parsed.type === 'FeatureCollection' && Array.isArray(parsed.features)
-                        ? parsed.features
-                        : parsed.type === 'Feature' ? [parsed] : null;
-                    if (!features || !features.every(validFeature)) {
-                        throw new Error('Le GeoJSON doit contenir des points ou lignes avec un titre et un statut valide.');
-                    }
-                    const previous = annotations;
-                    annotations = features;
-                    if (!saveAnnotations()) {
-                        annotations = previous;
-                        return;
-                    }
-                    renderAnnotations();
-                    showMessage(`${features.length} annotation${features.length === 1 ? '' : 's'} GeoJSON importée${features.length === 1 ? '' : 's'}.`);
-                } catch (error) {
-                    showMessage(`Import GeoJSON impossible : ${error.message}`, true);
-                } finally {
-                    input.value = '';
-                }
-            });
-
-            try {
-                const saved = localStorage.getItem(storageKey);
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    if (!Array.isArray(parsed) || !parsed.every(validFeature)) {
-                        throw new Error('Les données locales ne sont pas valides.');
-                    }
-                    annotations = parsed;
-                }
-            } catch (error) {
-                annotationLoadError = true;
-                showMessage(`Annotations locales non chargées : ${error.message}`, true);
-            }
-            renderAnnotations();
-            const bounds = L.latLngBounds(corridorPoints);
-            const mobile = window.matchMedia('(max-width: 650px)').matches;
-            map.fitBounds(bounds, {
-                paddingTopLeft: mobile ? [20, 80] : [370, 100],
-                paddingBottomRight: mobile ? [20, window.innerHeight * 0.46] : [40, 35],
-                maxZoom: 8
-            });
-            window.setTimeout(() => map.invalidateSize(), 100);
-            window.addEventListener('resize', () => map.invalidateSize());
-            if (!annotations.length && !annotationLoadError) {
-                showMessage('Carte prête. Les lignes de travaux et prévisions apparaîtront après leur saisie ou import GeoJSON.');
-            }
-        })();
+        const themeButton = document.getElementById("theme-toggle");
+        themeButton.addEventListener("click", () => {
+            const dark = document.body.dataset.theme !== "dark";
+            document.body.dataset.theme = dark ? "dark" : "light";
+            themeButton.setAttribute("aria-pressed", String(dark));
+            themeButton.setAttribute("aria-label", dark ? "Activer le thème clair" : "Activer le thème sombre");
+        });
+        document.getElementById("year").textContent = new Date().getFullYear();
     </script>
 </body>
 </html>
