@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Infrastructures Ferroviaires - Maroc</title>
+    
+    <style>
+        body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f2f5; }
+        #header { background: #b30000; color: white; padding: 15px 20px; font-weight: bold; font-size: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        #map-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: calc(100vh - 84px); padding: 20px; box-sizing: border-box; }
+        .canvas-carte { background: #ffffff; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); width: 100%; max-width: 950px; height: 100%; max-height: 650px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e1e4e8; position: relative; }
+        .barre-outils { background: #ffffff; border-bottom: 1px solid #edf2f7; padding: 12px 20px; display: flex; gap: 10px; align-items: center; z-index: 20; }
+        .titre-outils { font-size: 14px; font-weight: bold; color: #4a5568; margin-right: 10px; }
+        .bouton-oncf { background: #b30000; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; transition: all 0.2s; box-shadow: 0 2px 4px rgba(179,0,0,0.2); }
+        .bouton-oncf:hover { background: #800000; transform: translateY(-1px); }
+        .zone-dessin { flex: 1; position: relative; background: #dee5ed; overflow: hidden; }
+        
+        /* Grille cartographique style SNCF */
+        .grille { stroke: rgba(0, 0, 0, 0.03); stroke-width: 1; }
+        
+        /* Silhouette géographique et Pays frontaliers */
+        .cote-maroc { fill: #f7fafc; stroke: #cbd5e0; stroke-width: 2; }
+        .mer { fill: #e2e8f0; }
+        .frontiere-texte { font-size: 12px; font-weight: bold; fill: #a0aec0; letter-spacing: 2px; }
+
+        /* Style des gares et popups */
+        .gare { position: absolute; width: 10px; height: 10px; background: #ffffff; border: 3px solid #b30000; border-radius: 50%; transform: translate(-50%, -50%); cursor: pointer; transition: all 0.2s; z-index: 10; }
+        .gare:hover { transform: translate(-50%, -50%) scale(1.4); background: #b30000; box-shadow: 0 0 10px rgba(179,0,0,0.6); }
+        .gare.projet { border-color: #ff9900; }
+        .nom-gare { position: absolute; font-size: 11px; font-weight: bold; color: #2d3748; white-space: nowrap; transform: translate(14px, -6px); text-shadow: 2px 2px 0 #fff, -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff; }
+        
+        /* Pictogramme Train Grande Vitesse intégré aux hubs principaux */
+        .picto-tgv { position: absolute; font-size: 9px; background: #b30000; color: white; padding: 1px 3px; border-radius: 3px; font-weight: bold; transform: translate(14px, 8px); box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+
+        /* Fenêtre d'info au survol (Popup) */
+        .infobulle { visibility: hidden; width: 160px; background-color: #2d3748; color: #fff; text-align: center; border-radius: 6px; padding: 8px; position: absolute; z-index: 30; bottom: 125%; left: 50%; margin-left: -80px; opacity: 0; transition: opacity 0.2s; font-size: 11px; font-weight: normal; line-height: 1.4; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .infobulle::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #2d3748 transparent transparent transparent; }
+        .gare:hover .infobulle { visibility: visible; opacity: 1; }
+
+        /* Tracé des voies ferrées */
+        svg { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        .rail-lgv { stroke: #b30000; stroke-width: 4.5; stroke-linecap: round; stroke-linejoin: round; fill: none; transition: opacity 0.3s; }
+        .rail-classique { stroke: #4a5568; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; fill: none; transition: opacity 0.3s; }
+        .rail-classique-tiret { stroke: #ffffff; stroke-width: 1.5; stroke-dasharray: 5,5; fill: none; }
+        .rail-projet { stroke: #ff9900; stroke-width: 3; stroke-dasharray: 6,4; stroke-linecap: round; fill: none; transition: opacity 0.3s; }
+        
+        /* Échelle cartographique officielle */
+        .echelle-carte { position: absolute; bottom: 20px; right: 20px; background: rgba(255,255,255,0.8); padding: 5px 10px; border-radius: 4px; border: 1px solid #cbd5e0; font-size: 10px; font-weight: bold; color: #718096; }
+        .barre-echelle { height: 3px; background: #718096; width: 50px; margin-top: 3px; }
+
+        /* Légende intégrée habillée */
+        .legende { position: absolute; bottom: 20px; left: 20px; background: rgba(255, 255, 255, 0.92); border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; z-index: 15; box-shadow: 0 4px 6px rgba(0,0,0,0.05); font-size: 12px; color: #4a5568; display: flex; flex-direction: column; gap: 8px; }
+        .legende-item { display: flex; align-items: center; gap: 10px; font-weight: 500; }
+        .puce-lgv { width: 20px; height: 4px; background: #b30000; border-radius: 2px; }
+        .puce-classique { width: 20px; height: 4px; background: #4a5568; border-radius: 2px; border-top: 1px dashed #fff; }
+        .puce-projet { width: 20px; height: 4px; border-top: 3px dashed #ff9900; }
+    </style>
+</head>
+<body>
+
+    <div id="header">
+        Infrastructures Ferroviaires - Maroc<br>
+        <span style="font-size: 12px; font-weight: normal; opacity: 90%;">Réseau ONCF Interactif et Sécurisé</span>
+    </div>
+    
+    <div id="map-container">
+        <div class="canvas-carte">
+            <div class="barre-outils">
+                <span class="titre-outils">Filtres Réseau :</span>
+                <button class="bouton-oncf" onclick="filtrerReseau('all')">Tout le Réseau</button>
+                <button class="bouton-oncf" style="background:#4a5568; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="filtrerReseau('lgv')">Lignes Grande Vitesse (Al Boraq)</button>
+            </div>
+            
+            <div class="zone-dessin">
+                <svg>
+                    <!-- Fond Marine & Silhouette Terrestre épurée -->
+                    <rect width="100%" height="100%" class="mer" />
+                    <path class="cote-maroc" d="M 0,250 C 150,220 300,180 400,150 C 450,120 500,40 550,20 L 950,20 L 950,650 L 0,650 Z" />
+                    
+                    <!-- Lignes de Grille Technique de fond -->
+                    <line x1="200" y1="0" x2="200" y2="650" class="grille" />
+                    <line x1="400" y1="0" x2="400" y2="650" class="grille" />
+                    <line x1="600" y1="0" x2="600" y2="650" class="grille" />
+                    <line x1="800" y1="0" x2="800" y2="650" class="grille" />
+                    <line x1="0" y1="200" x2="950" y2="200" class="grille" />
+                    <line x1="0" y1="400" x2="950" y2="400" class="grille" />
+
+                    <!-- Indication Textuelle des Frontières / Pays voisins -->
+                    <text x="700" y="300" class="frontiere-texte">ALGÉRIE</text>
+                    <text x="350" y="35" class="frontiere-texte" style="font-size:10px;">ESPAGNE</text>
+
+                    <!-- Les Voies Ferrées -->
+                    <g id="reseau-ferre">
+                        <g class="groupe-classique">
+                            <path class="rail-classique" d="M 450 120 L 590 140 L 750 110" />
+                            <path class="rail-classique-tiret" d="M 450 120 L 590 140 L 750 110" />
+                        </g>
+                        <g class="groupe-classique">
+                            <path class="rail-classique" d="M 450 120 L 480 200 L 420 310 L 320 440" />
+                            <path class="rail-classique-tiret" d="M 450 120 L 480 200 L 420 310 L 320 440" />
+                        </g>
+                        <path id="ligne-projet" class="rail-projet" d="M 320 440 L 220 540" />
+                        <path id="ligne-lgv" class="rail-lgv" d="M 540 30 L 450 120 L 480 200 L 420 310" />
+                    </g>
+                </svg>
+
+                <!-- Bloc Échelle Cartographique -->
+                <div class="echelle-carte">
+                    <span>100 km</span>
+                    <div class="barre-echelle"></div>
+                </div>
+
+                <!-- Bloc Légende -->
+                <div class="legende">
+                    <div class="legende-item"><div class="puce-lgv"></div> <span>Grande Vitesse (LGV)</span></div>
+                    <div class="legende-item"><div class="puce-classique"></div> <span>Ligne Conventionnelle</span></div>
+                    <div class="legende-item"><div class="puce-projet"></div> <span>Extension en Projet</span></div>
+                </div>
+
+                <!-- Points des gares, Équivalents Pictos TGV et Infobulles intégrées -->
+                <div class="gare" style="top: 30px; left: 540px;"><span class="nom-gare">Tanger Ville</span><span class="picto-tgv">TGV</span><div class="infobulle"><b>Gare Tanger Ville</b><br>Terminus Nord Al Boraq<br>Correspondances régionales</div></div>
+                <div class="gare" style="top: 120px; left: 450px;"><span class="nom-gare">Kénitra</span><span class="picto-tgv">TGV</span><div class="infobulle"><b>Gare de Kénitra</b><br>Jonction LGV / Classique<br>Hub régional</div></div>
+                <div class="gare" style="top: 140px; left: 590px;"><span class="nom-gare">Fès</span><div class="infobulle"><b>Gare de Fès Ville</b><br>Axe Oriental<br>Ligne conventionnelle</div></div>
+                <div class="gare" style="top: 110px; left: 750px;"><span class="nom-gare">Oujda</span><div class="infobulle"><b>Gare d'Oujda</b><br>Terminus Est<br>Ligne conventionnelle</div></div>
