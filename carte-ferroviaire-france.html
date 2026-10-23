@@ -38,6 +38,12 @@
         .annotation-field label, .annotation-option { color: #29465a; font-size: 12px; font-weight: 650; }
         .annotation-field input, .annotation-field select, .annotation-field textarea { width: 100%; min-height: 36px; padding: 8px 10px; border: 1px solid #c9d6df; border-radius: 7px; color: #18334a; background: #fbfdfe; font: inherit; font-size: 13px; }
         .annotation-field textarea { min-height: 64px; resize: vertical; }
+        .annotation-photo-input { padding: 8px !important; }
+        .annotation-photo-preview { display: flex; align-items: flex-start; gap: 9px; margin-top: 8px; }
+        .annotation-photo-preview[hidden] { display: none; }
+        .annotation-photo-preview img { display: block; width: 96px; height: 72px; object-fit: cover; border: 1px solid #dbe4ea; border-radius: 6px; }
+        .annotation-photo-preview button { min-height: 32px; padding: 6px 9px; border: 0; border-radius: 7px; color: #29465a; background: #edf2f5; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+        .annotation-photo-help { margin: 5px 0 0; color: #64788b; font-size: 10px; line-height: 1.4; }
         .annotation-intro { margin: 0 0 10px; color: #5c7182; font-size: 12px; line-height: 1.45; }
         .annotation-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
         .annotation-actions button, .annotation-actions .file-button, .annotation-item button { border: 0; border-radius: 7px; padding: 9px 11px; color: #29465a; background: #edf2f5; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
@@ -196,6 +202,15 @@
                             <label for="annotation-note-input">Note ou référence (facultatif)</label>
                             <textarea id="annotation-note-input" maxlength="500" placeholder="Description, date ou référence à confirmer"></textarea>
                         </div>
+                        <div class="annotation-field">
+                            <label for="annotation-photo-input">Photo de l’événement (facultatif)</label>
+                            <input id="annotation-photo-input" class="annotation-photo-input" type="file" accept="image/jpeg,image/png,image/webp">
+                            <p class="annotation-photo-help">JPEG, PNG ou WebP, 12 Mo maximum. La photo est redimensionnée pour être conservée avec l’annotation.</p>
+                            <div id="annotation-photo-preview" class="annotation-photo-preview" hidden>
+                                <img id="annotation-photo-image" alt="Aperçu de la photo jointe">
+                                <button id="remove-annotation-photo" type="button">Retirer la photo</button>
+                            </div>
+                        </div>
                         <div class="annotation-actions">
                             <button id="draw-line" class="primary" type="button">Tracer une ligne</button>
                             <button id="draw-area" type="button">Tracer une zone</button>
@@ -227,7 +242,7 @@
                             <button id="export-annotations" type="button">GeoJSON</button>
                             <label class="file-button">Importer GeoJSON<input id="import-annotations" type="file" accept=".geojson,.json,application/geo+json,application/json"></label>
                         </div>
-                        <p class="annotation-file-note">KML s’importe dans Google My Maps. Le CSV (séparateur « ; ») s’ouvre dans Excel. Les annotations restent dans ce navigateur.</p>
+                        <p class="annotation-file-note">KML s’importe dans Google My Maps. Le CSV (séparateur « ; ») s’ouvre dans Excel. GeoJSON et CSV conservent les photos ; le KML les joint à la description. Les annotations restent dans ce navigateur.</p>
                     </div>
                 </details>
             </aside>
@@ -501,6 +516,7 @@
         let annotations = [];
         let modeAnnotation = null;
         let pointsBrouillon = [];
+        let photoAnnotationEnAttente = "";
 
         function afficherMessageAnnotation(texte, erreur = false) {
             const message = document.getElementById("annotation-message");
@@ -512,6 +528,10 @@
             if (!feature || feature.type !== "Feature" || !feature.geometry
                 || !feature.properties || typeof feature.properties.title !== "string"
                 || !Object.prototype.hasOwnProperty.call(statutsAnnotation, feature.properties.status)) return false;
+            if (feature.properties.photo !== undefined
+                && (typeof feature.properties.photo !== "string"
+                    || feature.properties.photo.length > 1000000
+                    || !/^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/.test(feature.properties.photo))) return false;
             const positionValide = (position) => Array.isArray(position) && position.length >= 2
                 && Number.isFinite(position[0]) && Number.isFinite(position[1])
                 && Math.abs(position[0]) <= 180 && Math.abs(position[1]) <= 90;
@@ -555,7 +575,64 @@
                 note.textContent = feature.properties.note;
                 contenu.appendChild(note);
             }
+            if (feature.properties.photo) {
+                const image = document.createElement("img");
+                image.src = feature.properties.photo;
+                image.alt = `Photo de l’événement : ${feature.properties.title}`;
+                image.loading = "lazy";
+                image.style.cssText = "display:block;max-width:240px;max-height:180px;margin-top:8px;border-radius:6px;object-fit:contain";
+                contenu.appendChild(image);
+            }
             return contenu;
+        }
+
+        function effacerPhotoEnAttente() {
+            photoAnnotationEnAttente = "";
+            document.getElementById("annotation-photo-input").value = "";
+            document.getElementById("annotation-photo-preview").hidden = true;
+            document.getElementById("annotation-photo-image").removeAttribute("src");
+        }
+
+        function convertirPhoto(file) {
+            if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+                return Promise.reject(new Error("Choisissez une image JPEG, PNG ou WebP."));
+            }
+            if (file.size > 12 * 1024 * 1024) {
+                return Promise.reject(new Error("La photo dépasse la limite de 12 Mo."));
+            }
+            return new Promise((resolve, reject) => {
+                const objectUrl = URL.createObjectURL(file);
+                const image = new Image();
+                image.onload = () => {
+                    URL.revokeObjectURL(objectUrl);
+                    let facteur = Math.min(1, 1280 / image.naturalWidth, 960 / image.naturalHeight);
+                    const canvas = document.createElement("canvas");
+                    while (facteur >= 0.2) {
+                        canvas.width = Math.max(1, Math.round(image.naturalWidth * facteur));
+                        canvas.height = Math.max(1, Math.round(image.naturalHeight * facteur));
+                        const context = canvas.getContext("2d");
+                        if (!context) {
+                            reject(new Error("Le navigateur ne peut pas traiter cette image."));
+                            return;
+                        }
+                        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+                        for (let qualite = 0.78; qualite >= 0.42; qualite -= 0.12) {
+                            const dataUrl = canvas.toDataURL("image/jpeg", qualite);
+                            if (dataUrl.length <= 900000) {
+                                resolve(dataUrl);
+                                return;
+                            }
+                        }
+                        facteur *= 0.75;
+                    }
+                    reject(new Error("Impossible de réduire cette photo à une taille compatible avec le stockage local."));
+                };
+                image.onerror = () => {
+                    URL.revokeObjectURL(objectUrl);
+                    reject(new Error("Le fichier sélectionné ne peut pas être lu comme une image."));
+                };
+                image.src = objectUrl;
+            });
         }
 
         function zoomerSurAnnotation(feature) {
@@ -649,6 +726,14 @@
                 const titre = document.createElement("span");
                 titre.className = "annotation-title";
                 titre.textContent = feature.properties.title;
+                if (feature.properties.photo) {
+                    const photo = document.createElement("img");
+                    photo.src = feature.properties.photo;
+                    photo.alt = `Photo de l’événement : ${feature.properties.title}`;
+                    photo.loading = "lazy";
+                    photo.style.cssText = "width:52px;height:42px;border-radius:5px;object-fit:cover";
+                    ligne.appendChild(photo);
+                }
                 const statut = document.createElement("small");
                 statut.textContent = statutsAnnotation[feature.properties.status].label;
                 titre.appendChild(statut);
@@ -688,6 +773,7 @@
                     title: titre,
                     status: document.getElementById("annotation-status-input").value,
                     note: document.getElementById("annotation-note-input").value.trim(),
+                    ...(photoAnnotationEnAttente ? { photo: photoAnnotationEnAttente } : {}),
                     createdAt: new Date().toISOString()
                 },
                 geometry: { type, coordinates: geometryCoordinates }
@@ -701,6 +787,7 @@
                 return false;
             }
             afficherAnnotations();
+            effacerPhotoEnAttente();
             afficherMessageAnnotation(`Annotation « ${feature.properties.title} » enregistrée dans ce navigateur.`);
             return true;
         }
@@ -861,6 +948,23 @@
             const feature = creerFeatureAnnotation(pointsBrouillon, type);
             if (feature && enregistrerAnnotation(feature)) arreterDessin();
         });
+        document.getElementById("annotation-photo-input").addEventListener("change", async (event) => {
+            const file = event.currentTarget.files[0];
+            if (!file) return;
+            try {
+                photoAnnotationEnAttente = await convertirPhoto(file);
+                document.getElementById("annotation-photo-image").src = photoAnnotationEnAttente;
+                document.getElementById("annotation-photo-preview").hidden = false;
+                afficherMessageAnnotation("Photo prête : elle sera jointe à la prochaine annotation enregistrée.");
+            } catch (erreur) {
+                effacerPhotoEnAttente();
+                afficherMessageAnnotation(`Photo impossible à ajouter : ${erreur.message}`, true);
+            }
+        });
+        document.getElementById("remove-annotation-photo").addEventListener("click", () => {
+            effacerPhotoEnAttente();
+            afficherMessageAnnotation("Photo retirée du formulaire.");
+        });
         document.getElementById("annotation-title-input").addEventListener("keydown", (event) => {
             if (event.key === "Enter" && modeAnnotation === "point") {
                 event.preventDefault();
@@ -881,9 +985,13 @@
                     const details = [
                         ["Statut", statutsAnnotation[props.status].label],
                         ["Note", props.note || ""],
+                        ["Photo (data URI)", props.photo || ""],
                         ["Créée le", props.createdAt || ""]
                     ].map(([nom, valeur]) => `<Data name="${echapperXml(nom)}"><value>${echapperXml(valeur)}</value></Data>`).join("");
-                    return `<Placemark><name>${echapperXml(props.title)}</name><ExtendedData>${details}</ExtendedData>${geometrieKml(feature.geometry)}</Placemark>`;
+                    const description = props.photo
+                        ? `<description><![CDATA[<img src="${props.photo}" alt="${echapperXml(props.title)}" style="max-width:320px;max-height:240px"><br>${echapperXml(props.note || "")}]]></description>`
+                        : "";
+                    return `<Placemark><name>${echapperXml(props.title)}</name>${description}<ExtendedData>${details}</ExtendedData>${geometrieKml(feature.geometry)}</Placemark>`;
                 }).join("");
                 const kml = `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Annotations du réseau ferroviaire français</name>${repertoires}</Document></kml>`;
                 telechargerFichier("annotations-reseau-ferroviaire-france.kml", kml, "application/vnd.google-earth.kml+xml;charset=utf-8");
@@ -898,7 +1006,7 @@
                 if (texteLibre && /^[\s]*[=+\-@]/.test(texte)) texte = `'${texte}`;
                 return `"${texte.replace(/"/g, '""')}"`;
             };
-            const enTete = ["Intitulé", "Statut", "Note", "Type de géométrie", "Latitude", "Longitude", "Géométrie GeoJSON", "Date de création"];
+            const enTete = ["Intitulé", "Statut", "Note", "Photo (data URI)", "Type de géométrie", "Latitude", "Longitude", "Géométrie GeoJSON", "Date de création"];
             const lignes = annotations.map((feature) => {
                 const props = feature.properties;
                 const coords = feature.geometry.type === "Point" ? feature.geometry.coordinates : [];
@@ -906,13 +1014,14 @@
                     props.title,
                     statutsAnnotation[props.status].label,
                     props.note || "",
+                    props.photo || "",
                     feature.geometry.type,
                     coords.length ? coords[1] : "",
                     coords.length ? coords[0] : "",
                     JSON.stringify(feature.geometry),
                     props.createdAt || ""
                 ];
-                return valeurs.map((valeur, index) => guillemeter(valeur, [0, 1, 2, 7].includes(index))).join(";");
+                return valeurs.map((valeur, index) => guillemeter(valeur, [0, 1, 2, 8].includes(index))).join(";");
             });
             const csv = `\uFEFF${[enTete.map(guillemeter).join(";"), ...lignes].join("\r\n")}`;
             telechargerFichier("annotations-reseau-ferroviaire-france.csv", csv, "text/csv;charset=utf-8");
