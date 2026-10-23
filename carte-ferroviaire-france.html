@@ -11,25 +11,24 @@
         html, body { margin: 0; width: 100%; height: 100%; }
         body { overflow: hidden; }
         button, input { font: inherit; }
-        .application { height: 100dvh; min-height: 580px; display: grid; grid-template-rows: auto minmax(0, 1fr); background: #edf2f5; }
-        .site-header { position: relative; z-index: 1000; display: flex; align-items: center; gap: 16px; min-height: 92px; margin: 14px 18px 0; padding: 15px 18px; border: 1px solid rgba(213, 223, 230, .9); border-left: 5px solid #008c95; border-radius: 14px; background: rgba(255,255,255,.94); box-shadow: 0 12px 32px rgba(25, 49, 67, .12); backdrop-filter: blur(12px); }
-        .brand-mark { display: grid; place-items: center; width: 54px; height: 54px; flex: 0 0 auto; border-radius: 12px; color: #fff; background: linear-gradient(145deg, #0e8790, #15516c); box-shadow: inset 0 1px rgba(255,255,255,.3); }
-        .brand-mark svg { width: 30px; height: 30px; }
+        .application { position: relative; height: 100dvh; min-height: 580px; overflow: hidden; background: #edf2f5; }
+        .site-header { position: absolute; z-index: 1200; top: 14px; right: 18px; left: 18px; display: flex; align-items: center; gap: 22px; min-height: 132px; padding: 16px 24px; border: 1px solid rgba(213, 223, 230, .9); border-left: 5px solid #008c95; border-radius: 14px; background: rgba(255,255,255,.96); box-shadow: 0 12px 32px rgba(25, 49, 67, .16); backdrop-filter: blur(12px); }
+        .brand-mark { display: grid; place-items: center; width: 112px; height: 92px; flex: 0 0 auto; border: 1px solid #d8e2e7; border-radius: 10px; color: #087f88; background: linear-gradient(145deg, #eff7f7, #e2ecee); }
+        .brand-mark svg { width: 48px; height: 48px; }
         .brand-copy { min-width: 0; }
         .brand-kicker { margin: 0 0 4px; color: #00838b; font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
-        .site-header h1 { margin: 0; color: #18334a; font-size: clamp(18px, 2vw, 25px); line-height: 1.15; }
-        .brand-subtitle { margin: 5px 0 0; color: #64788b; font-size: 13px; }
+        .site-header h1 { margin: 0; color: #18334a; font-size: clamp(24px, 2.5vw, 40px); line-height: 1.15; }
+        .brand-subtitle { margin: 7px 0 0; color: #64788b; font-size: 15px; }
         .header-spacer { flex: 1; }
         .header-count { color: #5d7082; font-size: 12px; font-weight: 700; white-space: nowrap; }
         .toggle-tools { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 42px; padding: 0 15px; border: 0; border-radius: 8px; color: #fff; background: #17445d; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(20, 56, 76, .16); transition: background .2s, transform .2s; }
         .toggle-tools:hover { background: #0d344a; transform: translateY(-1px); }
         .toggle-tools svg { width: 17px; height: 17px; }
-        .workspace { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 14px; min-height: 0; padding: 14px 18px 18px; transition: grid-template-columns .25s ease; }
-        .workspace.tools-hidden { grid-template-columns: minmax(0, 1fr); }
-        .sidebar { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow: auto; padding: 14px; border: 1px solid #e0e6eb; border-radius: 13px; background: rgba(255,255,255,.97); box-shadow: 0 10px 26px rgba(25, 49, 67, .11); }
+        .workspace { position: absolute; inset: 0; }
+        .sidebar { position: absolute; z-index: 1100; top: 156px; bottom: 18px; left: 18px; display: flex; width: min(450px, calc(100vw - 36px)); flex-direction: column; gap: 12px; overflow: auto; padding: 30px 20px; border: 1px solid #e0e6eb; border-radius: 13px; background: rgba(255,255,255,.98); box-shadow: 0 10px 26px rgba(25, 49, 67, .16); }
         .tools-hidden .sidebar { display: none; }
         .tool-section { overflow: hidden; flex: 0 0 auto; border: 1px solid #dbe4ea; border-radius: 9px; background: #fff; }
-        .tool-section > summary { display: flex; align-items: center; gap: 10px; min-height: 47px; padding: 11px 13px; color: #183b54; font-size: 13px; font-weight: 750; cursor: pointer; list-style: none; }
+        .tool-section > summary { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 12px 15px; color: #183b54; font-size: 15px; font-weight: 750; cursor: pointer; list-style: none; }
         .tool-section > summary::-webkit-details-marker { display: none; }
         .tool-section > summary::after { content: "+"; margin-left: auto; color: #008c95; font-size: 19px; font-weight: 500; line-height: 1; }
         .tool-section[open] > summary::after { content: "−"; }
@@ -53,30 +52,28 @@
         .measure-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
         #resultat { color: #52697b; font-size: 12px; font-weight: 600; line-height: 1.45; }
         .measure-clear { flex: 0 0 auto; }
-        .map-frame { position: relative; min-width: 0; min-height: 0; overflow: hidden; border: 1px solid #d2dce3; border-radius: 13px; background: #e6edf1; box-shadow: 0 10px 26px rgba(25, 49, 67, .12); }
+        .map-frame { position: absolute; inset: 0; min-width: 0; min-height: 0; overflow: hidden; background: #e6edf1; }
         #map { width: 100%; height: 100%; background: #e6edf1; }
-        .map-label { position: absolute; z-index: 500; top: 14px; left: 60px; padding: 8px 12px; border: 1px solid rgba(216,225,231,.9); border-radius: 7px; color: #3d596e; background: rgba(255,255,255,.9); box-shadow: 0 2px 8px rgba(24,51,74,.1); font-size: 11px; font-weight: 700; pointer-events: none; }
+        .leaflet-top.leaflet-left { top: 158px; left: auto; right: 62px; }
+        .leaflet-top.leaflet-right { top: 158px; right: 18px; }
         .leaflet-popup-content { line-height: 1.5; }
         @media (max-width: 760px) {
-            body { overflow: auto; }
-            .application { height: auto; min-height: 100dvh; grid-template-rows: auto minmax(0, 1fr); }
-            .site-header { min-height: 76px; gap: 10px; margin: 8px 8px 0; padding: 10px 12px; border-radius: 11px; }
-            .brand-mark { width: 42px; height: 42px; border-radius: 10px; }
-            .brand-mark svg { width: 25px; height: 25px; }
-            .brand-kicker { font-size: 8px; }
-            .site-header h1 { font-size: 17px; }
-            .brand-subtitle { font-size: 11px; }
+            .site-header { top: 8px; right: 8px; left: 8px; min-height: 78px; gap: 10px; padding: 9px 11px; border-radius: 11px; }
+            .brand-mark { width: 48px; height: 48px; border-radius: 8px; }
+            .brand-mark svg { width: 29px; height: 29px; }
+            .brand-kicker { margin-bottom: 3px; font-size: 8px; }
+            .site-header h1 { font-size: clamp(15px, 4vw, 20px); }
+            .brand-subtitle { margin-top: 4px; font-size: 10px; }
             .header-count { display: none; }
             .toggle-tools { width: 42px; min-width: 42px; min-height: 42px; padding: 0; }
             .toggle-label { display: none; }
-            .workspace { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(520px, 65vh); gap: 10px; padding: 10px 8px 12px; }
-            .workspace.tools-hidden { grid-template-columns: minmax(0, 1fr); }
-            .sidebar { max-height: none; padding: 9px; gap: 7px; }
-            .tool-section > summary { min-height: 42px; padding: 9px 11px; }
+            .sidebar { top: 96px; right: 8px; bottom: auto; left: 8px; width: auto; max-height: 55vh; gap: 8px; padding: 12px; }
+            .tool-section > summary { min-height: 46px; padding: 9px 11px; font-size: 13px; }
             .tool-content { padding: 10px; }
             .filter-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .filter-btn { min-height: 38px; padding: 7px; font-size: 11px; }
-            .map-label { top: 10px; left: 54px; padding: 7px 9px; font-size: 10px; }
+            .leaflet-top.leaflet-left { top: calc(96px + 55vh + 10px); right: 58px; }
+            .leaflet-top.leaflet-right { top: calc(96px + 55vh + 10px); right: 8px; }
         }
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
@@ -108,7 +105,7 @@
         </header>
         <main class="workspace" id="workspace">
             <aside class="sidebar" id="sidebar-tools" aria-label="Outils de la carte">
-                <details class="tool-section" open>
+                <details class="tool-section">
                     <summary id="search-title">Rechercher une ville ou une ligne</summary>
                     <div class="tool-content">
                         <form id="search-form" class="search-row" role="search">
@@ -120,7 +117,7 @@
                         <p id="search-status" role="status" aria-live="polite"></p>
                     </div>
                 </details>
-                <details class="tool-section" open>
+                <details class="tool-section">
                     <summary id="filter-title">Couches visibles · statuts</summary>
                     <div class="tool-content">
                         <div class="filter-list" role="group" aria-label="Filtres de statut des voies">
@@ -132,7 +129,7 @@
                     </div>
                 </details>
                 <details class="tool-section">
-                    <summary id="legend-title">Légende des statuts</summary>
+                    <summary id="legend-title">Informations sur la carte</summary>
                     <div class="tool-content" aria-labelledby="legend-title">
                         <div class="legend-row"><span class="legend-color" style="background:#16a34a"></span>Exploitée</div>
                         <div class="legend-row"><span class="legend-color" style="background:#ea580c"></span>Neutralisée / travaux</div>
@@ -151,7 +148,6 @@
             </aside>
             <section class="map-frame" aria-label="Carte du réseau ferroviaire français">
                 <div id="map" role="application" aria-label="Carte interactive du réseau ferré français"></div>
-                <div class="map-label">Réseau ferré national · France</div>
             </section>
         </main>
     </div>
