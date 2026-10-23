@@ -24,7 +24,7 @@
             padding: 11px 16px; border: 1px solid #dce2e9; border-radius: 10px;
             background: rgba(255,255,255,.97); box-shadow: 0 4px 18px #17212e24;
         }
-        .logo { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 8px; background: #9f111b; color: #fff; font-size: 12px; font-weight: 800; }
+        .logo { width: 48px; height: 42px; flex: none; display: block; border: 1px solid #e5e7eb; border-radius: 7px; background: #fff; object-fit: contain; }
         .topbar h1 { margin: 0; font-size: 16px; line-height: 1.2; }
         .topbar p { margin: 3px 0 0; color: #64748b; font-size: 12px; }
         .panel {
@@ -67,7 +67,9 @@
         .layer-option input { accent-color: #9f111b; }
         .swatch { display: inline-block; width: 18px; height: 4px; border-radius: 3px; }
         .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
-        .line-existing { background: #35485e; }
+        .line-existing { height: 2px; background: #9eabb8; }
+        .line-route { height: 5px; background: #0b7586; }
+        .line-lgv { height: 5px; background: #b4232e; }
         .line-operating { background: #18855b; }
         .line-current { background: #d13b36; }
         .line-maintenance { background: #d28a18; }
@@ -107,10 +109,10 @@
 <body>
     <div id="map" aria-label="Carte interactive du corridor ferroviaire Kénitra–Marrakech"></div>
     <header class="topbar">
-        <div class="logo" aria-hidden="true">ONCF</div>
+        <img class="logo" src="assets/logo-projet.jpg" alt="Logo du projet fourni">
         <div>
             <h1>Corridor ferroviaire Kénitra – Marrakech</h1>
-                <p>Vue sobre · carte plein écran · suivi des interventions</p>
+            <p>Vue sobre · carte plein écran · suivi des interventions</p>
         </div>
     </header>
     <button id="toggle-panel" class="panel-toggle" type="button" aria-controls="tools-panel" aria-expanded="true">Masquer les outils</button>
@@ -131,14 +133,16 @@
 
         <div class="notice">
             <strong>Carte de travail, pas une source officielle.</strong>
-            Fond neutre Esri. Les gares et l’axe pointillé sont des repères indicatifs ; importer le tracé RFN/ONCF validé et les données de travaux avant toute présentation comme état officiel.
+            Fond neutre Esri. Les voies proviennent du GeoPackage OpenStreetMap fourni (instantané du 30/10/2025) : ce n’est ni un inventaire officiel du réseau ferré national ni une donnée certifiée ONCF. L’axe bleu est un itinéraire indicatif raccordé à ces voies, pas un tracé certifié. Le tracé exact et les états d’exploitation restent à valider par le projet.
         </div>
 
         <section>
             <h3>Couches visibles</h3>
             <div class="layer-list">
                 <label class="layer-option"><input id="show-stations" type="checkbox" checked> Gares repères</label>
-                <label class="layer-option"><input id="show-corridor" type="checkbox" checked> Axe d’étude entre gares (indicatif)</label>
+                <label class="layer-option"><input id="show-route" type="checkbox" checked><span class="swatch line-route"></span> Axe Kénitra–Marrakech (itinéraire indicatif OSM)</label>
+                <label class="layer-option"><input id="show-corridor" type="checkbox" checked><span class="swatch line-existing"></span> Autres voies du secteur (OSM)</label>
+                <label class="layer-option"><input id="show-north-branches" type="checkbox"><span class="swatch line-lgv"></span> Réseau au nord de Kénitra (contexte)</label>
                 <label class="layer-option"><input class="show-status" data-status="exploite" type="checkbox" checked><span class="swatch line-operating"></span> En exploitation</label>
                 <label class="layer-option"><input class="show-status" data-status="en-cours" type="checkbox" checked><span class="swatch line-current"></span> Travaux en cours</label>
                 <label class="layer-option"><input class="show-status" data-status="maintenance" type="checkbox" checked><span class="swatch line-maintenance"></span> Maintenance</label>
@@ -200,7 +204,7 @@
                     <input id="import-data" type="file" accept=".geojson,.json,application/geo+json,application/json">
                 </label>
             </div>
-            <p class="attribution-note">Les annotations sont conservées dans ce navigateur ; exporte-les en GeoJSON pour les partager. L’import attend des géométries GeoJSON WGS84 (EPSG:4326) et des propriétés <code>title</code> et <code>status</code> : <code>exploite</code>, <code>en-cours</code>, <code>maintenance</code>, <code>previsionnel</code> ou <code>termine</code>.</p>
+            <p class="attribution-note">Source des voies : GeoPackage OpenStreetMap fourni, instantané 2025-10-30 ; ODbL 1.0. Attributions &copy; OpenStreetMap contributors et Esri. Ce GeoPackage n’est pas un inventaire officiel certifié par l’ONCF. Les annotations sont conservées dans ce navigateur ; exporte-les en GeoJSON pour les partager.</p>
         </section>
         <p id="app-message" class="message" role="status" aria-live="polite">Chargement de la carte…</p>
     </aside>
@@ -270,15 +274,75 @@
 
             const stationLayer = L.featureGroup().addTo(map);
             const corridorLayer = L.featureGroup().addTo(map);
+            const routeLayer = L.featureGroup().addTo(map);
+            const northBranchesLayer = L.featureGroup();
             const draftLayer = L.featureGroup().addTo(map);
             const workLayers = {};
             Object.keys(statusLabels).forEach((status) => {
                 workLayers[status] = L.featureGroup().addTo(map);
             });
             const corridorPoints = stations.map((station) => [station.lat, station.lon]);
-            L.polyline(corridorPoints, {
-                color: '#263f5b', weight: 3, opacity: 0.72, dashArray: '3 8', lineCap: 'round'
-            }).bindTooltip('Liaison indicative entre gares — ce trait n’est pas le tracé RFN').addTo(corridorLayer);
+            const railwayStyle = (feature) => {
+                const name = normalize(feature.properties.name || '');
+                const isHighSpeed = name.includes('grande vitesse') || name.includes('lgv') || name.includes('al boraq');
+                return {
+                    color: isHighSpeed ? '#b4232e' : '#9eabb8',
+                    weight: isHighSpeed ? 3.5 : 1.8,
+                    opacity: isHighSpeed ? 0.84 : 0.58,
+                    lineCap: 'round',
+                    lineJoin: 'round'
+                };
+            };
+            const routeStyle = {
+                color: '#0b7586',
+                weight: 5,
+                opacity: 0.96,
+                lineCap: 'round',
+                lineJoin: 'round'
+            };
+
+            fetch('data/reseau-ferre-osm.geojson')
+                .then((response) => {
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return response.json();
+                })
+                .then((railwayData) => {
+                    const corridorData = {
+                        ...railwayData,
+                        features: railwayData.features.filter((feature) => feature.properties.region === 'axe-kenitra-marrakech')
+                    };
+                    const northData = {
+                        ...railwayData,
+                        features: railwayData.features.filter((feature) => feature.properties.region === 'nord-kenitra')
+                    };
+                    const routeData = {
+                        ...railwayData,
+                        features: railwayData.features.filter((feature) => feature.properties.region === 'axe-principal-kenitra-marrakech')
+                    };
+                    L.geoJSON(corridorData, {
+                        style: railwayStyle,
+                        onEachFeature: (feature, layer) => {
+                            const name = feature.properties.name
+                                ? `<br>${escapeHtml(feature.properties.name)}`
+                                : '';
+                            layer.bindPopup(`<strong>Voie ferrée — OpenStreetMap</strong>${name}<br><small>Géométrie indicative, non certifiée ONCF</small>`);
+                        }
+                    }).addTo(corridorLayer);
+                    L.geoJSON(northData, {
+                        style: railwayStyle,
+                        onEachFeature: (feature, layer) => layer.bindPopup('<strong>Voie ferrée — OpenStreetMap</strong><br><small>Réseau au nord de Kénitra · couche de contexte</small>')
+                    }).addTo(northBranchesLayer);
+                    L.geoJSON(routeData, {
+                        style: routeStyle,
+                        onEachFeature: (feature, layer) => layer.bindPopup(
+                            `<strong>${escapeHtml(feature.properties.name)}</strong><br><small>${feature.properties.length_km.toLocaleString('fr-FR')} km · itinéraire indicatif calculé dans le réseau OSM, non certifié ONCF</small>`
+                        )
+                    }).addTo(routeLayer);
+                    showMessage(`${corridorData.features.length.toLocaleString('fr-FR')} tronçons OSM chargés pour le secteur ; l’axe indicatif Kénitra–Marrakech est mis en évidence.`);
+                })
+                .catch((error) => {
+                    showMessage(`Impossible de charger le réseau ferroviaire fourni : ${error.message}`, true);
+                });
 
             const markersByStation = new Map();
             stations.forEach((station) => {
@@ -596,6 +660,14 @@
                 if (event.currentTarget.checked) corridorLayer.addTo(map);
                 else map.removeLayer(corridorLayer);
             });
+            document.getElementById('show-route').addEventListener('change', (event) => {
+                if (event.currentTarget.checked) routeLayer.addTo(map);
+                else map.removeLayer(routeLayer);
+            });
+            document.getElementById('show-north-branches').addEventListener('change', (event) => {
+                if (event.currentTarget.checked) northBranchesLayer.addTo(map);
+                else map.removeLayer(northBranchesLayer);
+            });
             statusInputs.forEach((input) => input.addEventListener('change', renderAnnotations));
 
             document.getElementById('measure-start').addEventListener('click', startMeasure);
@@ -719,7 +791,7 @@
             window.setTimeout(() => map.invalidateSize(), 100);
             window.addEventListener('resize', () => map.invalidateSize());
             if (!annotations.length && !annotationLoadError) {
-                showMessage('Carte prête. Les lignes de travaux et prévisions apparaîtront après leur saisie ou import GeoJSON.');
+                showMessage('Carte prête. Les travaux et prévisions apparaîtront après leur saisie ou import GeoJSON.');
             }
         })();
     </script>
