@@ -9,10 +9,18 @@
         #header { background: #b30000; color: white; padding: 15px 20px; font-weight: bold; font-size: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
         #map-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: calc(100vh - 84px); padding: 20px; box-sizing: border-box; }
         .canvas-carte { background: #ffffff; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); width: 100%; max-width: 950px; height: 100%; max-height: 650px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e1e4e8; position: relative; }
-        .barre-outils { background: #ffffff; border-bottom: 1px solid #edf2f7; padding: 12px 20px; display: flex; gap: 10px; align-items: center; z-index: 20; }
+        .barre-outils { background: #ffffff; border-bottom: 1px solid #edf2f7; padding: 12px 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; z-index: 20; }
         .titre-outils { font-size: 14px; font-weight: bold; color: #4a5568; margin-right: 10px; }
         .bouton-oncf { background: #b30000; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; transition: all 0.2s; box-shadow: 0 2px 4px rgba(179,0,0,0.2); }
         .bouton-oncf:hover { background: #800000; transform: translateY(-1px); }
+        .bouton-oncf:focus-visible, .champ-recherche:focus-visible, .effacer-recherche:focus-visible { outline: 3px solid #3182ce; outline-offset: 2px; }
+        .filtre-reseau:not([aria-pressed="true"]) { background: #4a5568 !important; box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important; }
+        .recherche-gare { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+        .champ-recherche { width: 190px; max-width: 100%; padding: 8px 10px; border: 1px solid #cbd5e0; border-radius: 6px; color: #2d3748; font: inherit; font-size: 13px; }
+        .effacer-recherche { border: 0; background: transparent; color: #4a5568; cursor: pointer; font-size: 18px; padding: 3px 7px; border-radius: 5px; }
+        .resultat-recherche { position: absolute; top: 10px; left: 50%; z-index: 25; transform: translateX(-50%); margin: 0; padding: 7px 12px; border-radius: 6px; background: rgba(255,255,255,0.95); color: #2d3748; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+        .gare[hidden] { display: none; }
+        .gare:focus .infobulle { visibility: visible; opacity: 1; }
         .zone-dessin { flex: 1; position: relative; background: #dee5ed; overflow: hidden; }
         
         /* Grille cartographique style SNCF */
@@ -54,6 +62,18 @@
         .puce-lgv { width: 20px; height: 4px; background: #b30000; border-radius: 2px; }
         .puce-classique { width: 20px; height: 4px; background: #4a5568; border-radius: 2px; border-top: 1px dashed #fff; }
         .puce-projet { width: 20px; height: 4px; border-top: 3px dashed #ff9900; }
+        @media (max-width: 700px) {
+            #header { font-size: 17px; }
+            #map-container { height: auto; min-height: calc(100vh - 76px); padding: 10px; }
+            .canvas-carte { min-height: 620px; }
+            .barre-outils { padding: 10px; gap: 8px; }
+            .titre-outils { width: 100%; }
+            .bouton-oncf { padding: 8px 10px; font-size: 12px; }
+            .recherche-gare { width: 100%; margin-left: 0; }
+            .champ-recherche { flex: 1; width: auto; }
+            .legende { bottom: 10px; left: 10px; padding: 9px; font-size: 11px; }
+            .echelle-carte { bottom: 10px; right: 10px; }
+        }
     </style>
 </head>
 <body>
@@ -67,12 +87,18 @@
         <div class="canvas-carte">
             <div class="barre-outils">
                 <span class="titre-outils">Filtres Réseau :</span>
-                <button class="bouton-oncf" onclick="filtrerReseau('all')">Tout le Réseau</button>
-                <button class="bouton-oncf" style="background:#4a5568; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="filtrerReseau('lgv')">Lignes Grande Vitesse (Al Boraq)</button>
+                <button class="bouton-oncf filtre-reseau" type="button" data-filtre="all" aria-pressed="true">Tout le Réseau</button>
+                <button class="bouton-oncf filtre-reseau" type="button" data-filtre="lgv" aria-pressed="false">Lignes Grande Vitesse (Al Boraq)</button>
+                <label class="recherche-gare">
+                    <span class="titre-outils">Rechercher une gare :</span>
+                    <input id="recherche-gare" class="champ-recherche" type="search" placeholder="Ex. Tanger, Kenitra…" autocomplete="off" aria-label="Rechercher une gare">
+                    <button id="effacer-recherche" class="effacer-recherche" type="button" aria-label="Effacer la recherche" title="Effacer la recherche">×</button>
+                </label>
             </div>
             
             <div class="zone-dessin">
-                <svg>
+                <p id="resultat-recherche" class="resultat-recherche" role="status" aria-live="polite" hidden></p>
+                <svg viewBox="0 0 950 650" preserveAspectRatio="none" role="img" aria-label="Carte du réseau ferroviaire du Maroc">
                     <!-- Fond Marine & Silhouette Terrestre épurée -->
                     <rect width="100%" height="100%" class="mer" />
                     <path class="cote-maroc" d="M 0,250 C 150,220 300,180 400,150 C 450,120 500,40 550,20 L 950,20 L 950,650 L 0,650 Z" />
@@ -118,7 +144,97 @@
                 </div>
 
                 <!-- Points des gares, Équivalents Pictos TGV et Infobulles intégrées -->
-                <div class="gare" style="top: 30px; left: 540px;"><span class="nom-gare">Tanger Ville</span><span class="picto-tgv">TGV</span><div class="infobulle"><b>Gare Tanger Ville</b><br>Terminus Nord Al Boraq<br>Correspondances régionales</div></div>
-                <div class="gare" style="top: 120px; left: 450px;"><span class="nom-gare">Kénitra</span><span class="picto-tgv">TGV</span><div class="infobulle"><b>Gare de Kénitra</b><br>Jonction LGV / Classique<br>Hub régional</div></div>
-                <div class="gare" style="top: 140px; left: 590px;"><span class="nom-gare">Fès</span><div class="infobulle"><b>Gare de Fès Ville</b><br>Axe Oriental<br>Ligne conventionnelle</div></div>
-                <div class="gare" style="top: 110px; left: 750px;"><span class="nom-gare">Oujda</span><div class="infobulle"><b>Gare d'Oujda</b><br>Terminus Est<br>Ligne conventionnelle</div></div>
+                <div class="gare" data-lignes="lgv" data-search="Tanger Tanger Ville" style="top: 4.62%; left: 56.84%;" tabindex="0">
+                    <span class="nom-gare">Tanger Ville</span><span class="picto-tgv">TGV</span>
+                    <div class="infobulle"><b>Gare Tanger Ville</b><br>Terminus Nord Al Boraq<br>Correspondances régionales</div>
+                </div>
+                <div class="gare" data-lignes="lgv classique" data-search="Kenitra Kénitra" style="top: 18.46%; left: 47.37%;" tabindex="0">
+                    <span class="nom-gare">Kénitra</span><span class="picto-tgv">TGV</span>
+                    <div class="infobulle"><b>Gare de Kénitra</b><br>Jonction LGV / Classique<br>Hub régional</div>
+                </div>
+                <div class="gare" data-lignes="classique" data-search="Fes Fès" style="top: 21.54%; left: 62.11%;" tabindex="0">
+                    <span class="nom-gare">Fès</span>
+                    <div class="infobulle"><b>Gare de Fès Ville</b><br>Axe Oriental<br>Ligne conventionnelle</div>
+                </div>
+                <div class="gare" data-lignes="classique" data-search="Oujda" style="top: 16.92%; left: 78.95%;" tabindex="0">
+                    <span class="nom-gare">Oujda</span>
+                    <div class="infobulle"><b>Gare d'Oujda</b><br>Terminus Est<br>Ligne conventionnelle</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        (() => {
+            const gares = Array.from(document.querySelectorAll('.gare'));
+            const boutonsFiltre = Array.from(document.querySelectorAll('.filtre-reseau'));
+            const recherche = document.getElementById('recherche-gare');
+            const boutonEffacer = document.getElementById('effacer-recherche');
+            const statut = document.getElementById('resultat-recherche');
+            let filtreActif = 'all';
+
+            const normaliser = (texte) => texte
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLocaleLowerCase('fr')
+                .trim();
+
+            function actualiserCarte() {
+                const terme = normaliser(recherche.value);
+                let nombreVisible = 0;
+
+                gares.forEach((gare) => {
+                    const correspondRecherche = !terme || normaliser(
+                        `${gare.dataset.search} ${gare.textContent}`
+                    ).includes(terme);
+                    const correspondFiltre = filtreActif === 'all'
+                        || gare.dataset.lignes.split(' ').includes(filtreActif);
+                    const visible = correspondRecherche && correspondFiltre;
+
+                    gare.hidden = !visible;
+                    if (visible) nombreVisible += 1;
+                });
+
+                document.querySelectorAll('.groupe-classique').forEach((ligne) => {
+                    ligne.style.display = filtreActif === 'lgv' ? 'none' : '';
+                });
+                document.getElementById('ligne-projet').style.display = filtreActif === 'lgv' ? 'none' : '';
+
+                if (terme) {
+                    statut.hidden = false;
+                    statut.textContent = nombreVisible
+                        ? `${nombreVisible} gare${nombreVisible > 1 ? 's' : ''} trouvée${nombreVisible > 1 ? 's' : ''}`
+                        : 'Aucune gare trouvée pour cette recherche.';
+                } else {
+                    statut.hidden = true;
+                    statut.textContent = '';
+                }
+            }
+
+            boutonsFiltre.forEach((bouton) => {
+                bouton.addEventListener('click', () => {
+                    filtreActif = bouton.dataset.filtre;
+                    boutonsFiltre.forEach((autre) => {
+                        autre.setAttribute('aria-pressed', String(autre === bouton));
+                    });
+                    actualiserCarte();
+                });
+            });
+
+            recherche.addEventListener('input', actualiserCarte);
+            boutonEffacer.addEventListener('click', () => {
+                recherche.value = '';
+                actualiserCarte();
+                recherche.focus();
+            });
+            recherche.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && recherche.value) {
+                    recherche.value = '';
+                    actualiserCarte();
+                }
+            });
+
+            actualiserCarte();
+        })();
+    </script>
+</body>
+</html>
