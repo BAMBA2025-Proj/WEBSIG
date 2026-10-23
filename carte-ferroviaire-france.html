@@ -6,97 +6,155 @@
     <!-- Leaflet et le fond cartographique sont chargés depuis des services publics. -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <style>
-        :root { font-family: "Segoe UI", Arial, sans-serif; color: #1f2937; }
+        :root { font-family: "Segoe UI", Arial, sans-serif; color: #18334a; background: #edf2f5; }
         * { box-sizing: border-box; }
-        html, body, #map { margin: 0; padding: 0; height: 100%; width: 100%; background: #e8edf2; }
-        .panneau { position: absolute; z-index: 1000; background: rgba(255,255,255,.97); border: 1px solid #d1d9e0; border-radius: 10px; box-shadow: 0 3px 14px rgba(15,23,42,.18); padding: 12px 14px; }
-        .title-box { top: 14px; left: 14px; width: min(350px, calc(100vw - 28px)); border-left: 5px solid #0056b3; }
-        .title-box h1 { font-size: 18px; margin: 0 0 4px; }
-        .title-box p { margin: 0; color: #526171; font-size: 12px; line-height: 1.4; }
-        .search-box { top: 118px; left: 14px; width: min(350px, calc(100vw - 28px)); }
-        .search-box h2, .filter-box h2, .legend-box h2, .measure-box h2 { font-size: 14px; margin: 0 0 8px; }
-        .search-row { display: flex; gap: 6px; }
-        .search-input { width: 100%; min-width: 0; padding: 9px; border: 1px solid #aeb9c4; border-radius: 5px; font: inherit; }
-        .search-btn, .clear-btn, .filter-btn, .measure-clear { border: 0; border-radius: 5px; padding: 8px 10px; font: inherit; font-weight: 650; cursor: pointer; }
-        .search-btn, .filter-btn[aria-pressed="true"] { color: white; background: #0056b3; }
-        .clear-btn, .filter-btn, .measure-clear { color: #243447; background: #e8edf2; }
-        .search-btn:hover { background: #004085; }
-        .filter-btn:hover, .clear-btn:hover, .measure-clear:hover { background: #d7e0e8; }
-        :focus-visible { outline: 3px solid #f59e0b; outline-offset: 2px; }
+        html, body { margin: 0; width: 100%; height: 100%; }
+        body { overflow: hidden; }
+        button, input { font: inherit; }
+        .application { height: 100dvh; min-height: 580px; display: grid; grid-template-rows: auto minmax(0, 1fr); background: #edf2f5; }
+        .site-header { position: relative; z-index: 1000; display: flex; align-items: center; gap: 16px; min-height: 92px; margin: 14px 18px 0; padding: 15px 18px; border: 1px solid rgba(213, 223, 230, .9); border-left: 5px solid #008c95; border-radius: 14px; background: rgba(255,255,255,.94); box-shadow: 0 12px 32px rgba(25, 49, 67, .12); backdrop-filter: blur(12px); }
+        .brand-mark { display: grid; place-items: center; width: 54px; height: 54px; flex: 0 0 auto; border-radius: 12px; color: #fff; background: linear-gradient(145deg, #0e8790, #15516c); box-shadow: inset 0 1px rgba(255,255,255,.3); }
+        .brand-mark svg { width: 30px; height: 30px; }
+        .brand-copy { min-width: 0; }
+        .brand-kicker { margin: 0 0 4px; color: #00838b; font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+        .site-header h1 { margin: 0; color: #18334a; font-size: clamp(18px, 2vw, 25px); line-height: 1.15; }
+        .brand-subtitle { margin: 5px 0 0; color: #64788b; font-size: 13px; }
+        .header-spacer { flex: 1; }
+        .header-count { color: #5d7082; font-size: 12px; font-weight: 700; white-space: nowrap; }
+        .toggle-tools { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 42px; padding: 0 15px; border: 0; border-radius: 8px; color: #fff; background: #17445d; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(20, 56, 76, .16); transition: background .2s, transform .2s; }
+        .toggle-tools:hover { background: #0d344a; transform: translateY(-1px); }
+        .toggle-tools svg { width: 17px; height: 17px; }
+        .workspace { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 14px; min-height: 0; padding: 14px 18px 18px; transition: grid-template-columns .25s ease; }
+        .workspace.tools-hidden { grid-template-columns: minmax(0, 1fr); }
+        .sidebar { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow: auto; padding: 14px; border: 1px solid #e0e6eb; border-radius: 13px; background: rgba(255,255,255,.97); box-shadow: 0 10px 26px rgba(25, 49, 67, .11); }
+        .tools-hidden .sidebar { display: none; }
+        .tool-section { overflow: hidden; flex: 0 0 auto; border: 1px solid #dbe4ea; border-radius: 9px; background: #fff; }
+        .tool-section > summary { display: flex; align-items: center; gap: 10px; min-height: 47px; padding: 11px 13px; color: #183b54; font-size: 13px; font-weight: 750; cursor: pointer; list-style: none; }
+        .tool-section > summary::-webkit-details-marker { display: none; }
+        .tool-section > summary::after { content: "+"; margin-left: auto; color: #008c95; font-size: 19px; font-weight: 500; line-height: 1; }
+        .tool-section[open] > summary::after { content: "−"; }
+        .tool-section[open] > summary { border-bottom: 1px solid #edf1f4; }
+        .tool-content { padding: 12px; }
+        .search-row { display: flex; gap: 7px; }
+        .search-input { width: 100%; min-width: 0; padding: 10px 11px; border: 1px solid #c9d6df; border-radius: 7px; color: #18334a; background: #fbfdfe; font-size: 13px; }
+        .search-btn, .clear-btn, .filter-btn, .measure-clear { border: 0; border-radius: 7px; padding: 9px 11px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; transition: background .18s, color .18s; }
+        .search-btn, .filter-btn[aria-pressed="true"] { color: #fff; background: #087f88; }
+        .clear-btn, .filter-btn, .measure-clear { color: #29465a; background: #edf2f5; }
+        .search-btn:hover, .filter-btn[aria-pressed="true"]:hover { background: #066b73; }
+        .filter-btn:hover, .clear-btn:hover, .measure-clear:hover { background: #dce7ed; }
+        :focus-visible { outline: 3px solid #e3a333; outline-offset: 2px; }
         .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-        #search-status { min-height: 1.2em; margin: 8px 0 0; font-size: 12px; color: #465565; }
+        #search-status { min-height: 1.2em; margin: 9px 0 0; color: #5c7182; font-size: 11px; line-height: 1.45; }
         #search-status[data-state="error"] { color: #b42318; font-weight: 650; }
-        .filter-box { top: 224px; left: 14px; width: min(350px, calc(100vw - 28px)); }
         .filter-list { display: grid; gap: 6px; }
         .filter-btn { width: 100%; text-align: left; }
-        .filter-btn[aria-pressed="true"] { background: #0056b3; }
-        .legend-box { right: 16px; bottom: 18px; min-width: 215px; font-size: 12px; }
-        .legend-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
-        .legend-color { display: inline-block; width: 22px; height: 5px; border-radius: 3px; flex: 0 0 auto; }
-        .measure-box { left: 16px; bottom: 18px; width: min(320px, calc(100vw - 32px)); border-left: 4px solid #e03a3e; }
+        .legend-row { display: flex; align-items: center; gap: 9px; margin: 7px 0; color: #496174; font-size: 12px; }
+        .legend-color { display: inline-block; width: 23px; height: 5px; border-radius: 3px; flex: 0 0 auto; }
         .measure-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-        #resultat { font-size: 13px; font-weight: 600; line-height: 1.4; }
-        .leaflet-top.leaflet-left { top: 14px; left: 370px; }
-        .leaflet-top.leaflet-right { top: 14px; right: 14px; }
+        #resultat { color: #52697b; font-size: 12px; font-weight: 600; line-height: 1.45; }
+        .measure-clear { flex: 0 0 auto; }
+        .map-frame { position: relative; min-width: 0; min-height: 0; overflow: hidden; border: 1px solid #d2dce3; border-radius: 13px; background: #e6edf1; box-shadow: 0 10px 26px rgba(25, 49, 67, .12); }
+        #map { width: 100%; height: 100%; background: #e6edf1; }
+        .map-label { position: absolute; z-index: 500; top: 14px; left: 60px; padding: 8px 12px; border: 1px solid rgba(216,225,231,.9); border-radius: 7px; color: #3d596e; background: rgba(255,255,255,.9); box-shadow: 0 2px 8px rgba(24,51,74,.1); font-size: 11px; font-weight: 700; pointer-events: none; }
         .leaflet-popup-content { line-height: 1.5; }
-        @media (max-width: 700px) {
-            .panneau { padding: 9px 10px; border-radius: 8px; }
-            .title-box { top: 8px; left: 8px; width: calc(100vw - 16px); }
-            .title-box h1 { font-size: 16px; }
-            .search-box { top: 83px; left: 8px; width: calc(100vw - 16px); }
-            .search-box h2 { display: none; }
-            .filter-box { top: 155px; left: 8px; width: calc(100vw - 16px); }
-            .filter-box h2 { margin-bottom: 5px; }
+        @media (max-width: 760px) {
+            body { overflow: auto; }
+            .application { height: auto; min-height: 100dvh; grid-template-rows: auto minmax(0, 1fr); }
+            .site-header { min-height: 76px; gap: 10px; margin: 8px 8px 0; padding: 10px 12px; border-radius: 11px; }
+            .brand-mark { width: 42px; height: 42px; border-radius: 10px; }
+            .brand-mark svg { width: 25px; height: 25px; }
+            .brand-kicker { font-size: 8px; }
+            .site-header h1 { font-size: 17px; }
+            .brand-subtitle { font-size: 11px; }
+            .header-count { display: none; }
+            .toggle-tools { width: 42px; min-width: 42px; min-height: 42px; padding: 0; }
+            .toggle-label { display: none; }
+            .workspace { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(520px, 65vh); gap: 10px; padding: 10px 8px 12px; }
+            .workspace.tools-hidden { grid-template-columns: minmax(0, 1fr); }
+            .sidebar { max-height: none; padding: 9px; gap: 7px; }
+            .tool-section > summary { min-height: 42px; padding: 9px 11px; }
+            .tool-content { padding: 10px; }
             .filter-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-            .filter-btn { padding: 7px; font-size: 12px; }
-            .legend-box { right: 8px; bottom: 8px; min-width: 0; font-size: 10px; }
-            .legend-box h2 { margin-bottom: 4px; }
-            .legend-row { margin: 4px 0; }
-            .measure-box { left: 8px; bottom: 8px; width: min(220px, calc(50vw - 14px)); }
-            #resultat { font-size: 11px; }
-            .measure-clear { padding: 6px; font-size: 11px; }
-            .leaflet-top.leaflet-left { top: 336px; left: 8px; }
-            .leaflet-top.leaflet-right { top: 336px; right: 8px; }
+            .filter-btn { min-height: 38px; padding: 7px; font-size: 11px; }
+            .map-label { top: 10px; left: 54px; padding: 7px 9px; font-size: 10px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
         }
     </style>
 </head>
 <body>
-    <header class="panneau title-box">
-        <h1>Réseau ferré national français</h1>
-        <p>Carte interactive des tronçons ferroviaires et de leur statut, d'après les données intégrées au fichier.</p>
-    </header>
-    <section class="panneau search-box" aria-labelledby="search-title">
-        <h2 id="search-title">Rechercher un tronçon</h2>
-        <form id="search-form" class="search-row" role="search">
-            <label class="sr-only" for="inputLigne">Code de ligne, statut ou point kilométrique</label>
-            <input type="search" id="inputLigne" class="search-input" placeholder="Ville, Paris–Lyon, code, statut, PK…" autocomplete="off">
-            <button class="search-btn" type="submit">Chercher</button>
-            <button class="clear-btn" id="clear-search" type="button" aria-label="Effacer la recherche" hidden>Effacer</button>
-        </form>
-        <p id="search-status" role="status" aria-live="polite"></p>
-    </section>
-    <section class="panneau filter-box" aria-labelledby="filter-title">
-        <h2 id="filter-title">Filtrer par statut</h2>
-        <div class="filter-list" role="group" aria-label="Filtres de statut des voies">
-            <button class="filter-btn" type="button" data-filter="all" aria-pressed="true">Tous les statuts</button>
-            <button class="filter-btn" type="button" data-filter="active" aria-pressed="false">Exploitée</button>
-            <button class="filter-btn" type="button" data-filter="works" aria-pressed="false">Neutralisée / travaux</button>
-            <button class="filter-btn" type="button" data-filter="inactive" aria-pressed="false">Fermée / autres statuts</button>
-        </div>
-    </section>
-    <aside class="panneau legend-box" aria-label="Légende des statuts">
-        <h2>Statut du tronçon</h2>
-        <div class="legend-row"><span class="legend-color" style="background:#16a34a"></span>Exploitée</div>
-        <div class="legend-row"><span class="legend-color" style="background:#ea580c"></span>Neutralisée / travaux</div>
-        <div class="legend-row"><span class="legend-color" style="background:#dc2626"></span>Fermée / autre statut</div>
-    </aside>
-    <section class="panneau measure-box" aria-labelledby="measure-title">
-        <div class="measure-row">
-            <div><h2 id="measure-title">Mesure de distance</h2><div id="resultat" aria-live="polite">Cliquez sur deux points de la carte.</div></div>
-            <button class="measure-clear" id="clear-measure" type="button">Effacer</button>
-        </div>
-    </section>
-    <div id="map" role="application" aria-label="Carte interactive du réseau ferré français"></div>
+    <div class="application">
+        <header class="site-header">
+            <div class="brand-mark" aria-hidden="true">
+                <svg viewBox="0 0 32 32" fill="none">
+                    <path d="M7 5h18a3 3 0 0 1 3 3v12a5 5 0 0 1-5 5H12a5 5 0 0 1-5-5V5Z" stroke="currentColor" stroke-width="2"/>
+                    <path d="M10 10h12M10 15h12M12 25l-3 4m11-4 3 4M11 20h.01M21 20h.01" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div class="brand-copy">
+                <p class="brand-kicker">Réseau ferroviaire · France</p>
+                <h1>Carte du réseau ferré national</h1>
+                <p class="brand-subtitle">Exploration des lignes, des villes et des statuts du réseau</p>
+            </div>
+            <div class="header-spacer"></div>
+            <span class="header-count" id="header-count">1 638 tronçons</span>
+            <button class="toggle-tools" id="toggle-tools" type="button" aria-controls="sidebar-tools" aria-expanded="true" aria-label="Masquer les outils">
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span class="toggle-label">Masquer les outils</span>
+            </button>
+        </header>
+        <main class="workspace" id="workspace">
+            <aside class="sidebar" id="sidebar-tools" aria-label="Outils de la carte">
+                <details class="tool-section" open>
+                    <summary id="search-title">Rechercher une ville ou une ligne</summary>
+                    <div class="tool-content">
+                        <form id="search-form" class="search-row" role="search">
+                            <label class="sr-only" for="inputLigne">Ville, trajet, code de ligne, statut ou point kilométrique</label>
+                            <input type="search" id="inputLigne" class="search-input" placeholder="Ville, Paris–Lyon, code, statut…" autocomplete="off">
+                            <button class="search-btn" type="submit">Chercher</button>
+                            <button class="clear-btn" id="clear-search" type="button" aria-label="Effacer la recherche" hidden>Effacer</button>
+                        </form>
+                        <p id="search-status" role="status" aria-live="polite"></p>
+                    </div>
+                </details>
+                <details class="tool-section" open>
+                    <summary id="filter-title">Couches visibles · statuts</summary>
+                    <div class="tool-content">
+                        <div class="filter-list" role="group" aria-label="Filtres de statut des voies">
+                            <button class="filter-btn" type="button" data-filter="all" aria-pressed="true">Tous les statuts</button>
+                            <button class="filter-btn" type="button" data-filter="active" aria-pressed="false">Exploitée</button>
+                            <button class="filter-btn" type="button" data-filter="works" aria-pressed="false">Neutralisée / travaux</button>
+                            <button class="filter-btn" type="button" data-filter="inactive" aria-pressed="false">Fermée / autres statuts</button>
+                        </div>
+                    </div>
+                </details>
+                <details class="tool-section">
+                    <summary id="legend-title">Légende des statuts</summary>
+                    <div class="tool-content" aria-labelledby="legend-title">
+                        <div class="legend-row"><span class="legend-color" style="background:#16a34a"></span>Exploitée</div>
+                        <div class="legend-row"><span class="legend-color" style="background:#ea580c"></span>Neutralisée / travaux</div>
+                        <div class="legend-row"><span class="legend-color" style="background:#dc2626"></span>Fermée / autre statut</div>
+                    </div>
+                </details>
+                <details class="tool-section">
+                    <summary id="measure-title">Mesurer une distance</summary>
+                    <div class="tool-content">
+                        <div class="measure-row">
+                            <div id="resultat" aria-live="polite">Cliquez sur deux points de la carte.</div>
+                            <button class="measure-clear" id="clear-measure" type="button">Effacer</button>
+                        </div>
+                    </div>
+                </details>
+            </aside>
+            <section class="map-frame" aria-label="Carte du réseau ferroviaire français">
+                <div id="map" role="application" aria-label="Carte interactive du réseau ferré français"></div>
+                <div class="map-label">Réseau ferré national · France</div>
+            </section>
+        </main>
+    </div>
 
     <!-- Bibliothèque Leaflet -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -347,6 +405,20 @@
 
         const coucheRFN = L.geoJSON(null, { style: styleLigne, onEachFeature: afficherPopup }).addTo(map);
         L.control.layers(null, { "Tronçons ferroviaires filtrés": coucheRFN }, { collapsed: true, position: "topright" }).addTo(map);
+
+        const boutonOutils = document.getElementById("toggle-tools");
+        const workspace = document.getElementById("workspace");
+        boutonOutils.addEventListener("click", () => {
+            const outilsVisibles = boutonOutils.getAttribute("aria-expanded") === "true";
+            boutonOutils.setAttribute("aria-expanded", String(!outilsVisibles));
+            boutonOutils.setAttribute("aria-label", outilsVisibles ? "Afficher les outils" : "Masquer les outils");
+            boutonOutils.querySelector(".toggle-label").textContent = outilsVisibles
+                ? "Afficher les outils"
+                : "Masquer les outils";
+            workspace.classList.toggle("tools-hidden", outilsVisibles);
+            requestAnimationFrame(() => map.invalidateSize({ pan: false }));
+            window.setTimeout(() => map.invalidateSize({ pan: false }), 260);
+        });
 
         function obtenirTroncons() {
             const recherche = normaliserTexte(champRecherche.value);
