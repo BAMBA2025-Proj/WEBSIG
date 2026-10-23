@@ -122,6 +122,10 @@
         .map-pin--small svg { width: 20px; height: 25px; }
         .station-pin { z-index: 600; }
         .event-pin { z-index: 500; }
+        .poi-pin { z-index: 450; }
+        .poi-marker { display: flex; width: 29px; height: 29px; align-items: center; justify-content: center; border: 2px solid #fff; border-radius: 50%; color: #fff; box-shadow: 0 2px 8px #17212e35; font-size: 14px; line-height: 1; }
+        .poi-option { padding: 3px 6px; border: 1px solid #e1e7ee; border-radius: 5px; background: #fff; font-size: 11px; }
+        .poi-option input { accent-color: #087e8b; }
         @media (max-width: 650px) {
             .topbar { top: 8px; right: 8px; left: 8px; min-height: 68px; gap: 8px; padding: 7px 9px; }
             .brand { gap: 8px; }
@@ -215,6 +219,26 @@
         </section>
 
         <section>
+            <h3>Repères d’infrastructure</h3>
+            <p class="intro">Ajoute des repères ponctuels pour les équipements observés. Ils restent distincts des voies de référence.</p>
+            <div class="field">
+                <label for="poi-type">Type de repère</label>
+                <select id="poi-type">
+                    <option value="passage-niveau">Passage à niveau</option>
+                    <option value="signalisation">Signalisation</option>
+                    <option value="ouvrage">Ouvrage d’art</option>
+                    <option value="electrification">Électrification</option>
+                    <option value="autre">Autre équipement</option>
+                </select>
+            </div>
+            <div class="button-row">
+                <button id="add-poi" class="primary" type="button">Placer un repère</button>
+                <label class="poi-option"><input id="show-poi" type="checkbox" checked> Afficher les repères</label>
+            </div>
+            <div id="poi-list" class="work-list"><p class="intro">Aucun repère ajouté.</p></div>
+        </section>
+
+        <section>
             <h3>Mesurer une distance</h3>
             <p class="intro">Clique sur « Démarrer », puis sur au moins deux points de la carte. La distance suit les clics, pas le tracé exact des voies.</p>
             <div class="button-row">
@@ -278,6 +302,14 @@
         (() => {
             const message = document.getElementById('app-message');
             const storageKey = 'websig-kenitra-marrakech-annotations-presentation-v1';
+            const poiStorageKey = 'websig-kenitra-marrakech-poi-presentation-v1';
+            const poiTypes = {
+                'passage-niveau': { label: 'Passage à niveau', symbol: '⌁', color: '#bf5a36' },
+                signalisation: { label: 'Signalisation', symbol: '⚑', color: '#c99a23' },
+                ouvrage: { label: 'Ouvrage d’art', symbol: '▤', color: '#697c91' },
+                electrification: { label: 'Électrification', symbol: 'ϟ', color: '#7a54ae' },
+                autre: { label: 'Autre équipement', symbol: '◆', color: '#18855b' }
+            };
             const statusLabels = {
                 exploite: 'En exploitation',
                 'en-cours': 'Travaux en cours',
@@ -364,6 +396,8 @@
             const routeLayer = L.featureGroup().addTo(map);
             const northBranchesLayer = L.featureGroup();
             const draftLayer = L.featureGroup().addTo(map);
+            const poiLayer = L.featureGroup().addTo(map);
+            const poiDraftLayer = L.featureGroup().addTo(map);
             const workLayers = {};
             Object.keys(statusLabels).forEach((status) => {
                 workLayers[status] = L.featureGroup().addTo(map);
@@ -464,6 +498,7 @@
 
             let annotations = [];
             let annotationLoadError = false;
+            let pointsOfInterest = [];
             let mode = null;
             let drawingPoints = [];
             let measurePoints = [];
@@ -517,6 +552,89 @@
                     color, weight: 6, opacity: 0.9, lineCap: 'round', lineJoin: 'round',
                     fillColor: color, fillOpacity: feature.geometry.type === 'Polygon' ? 0.22 : 0
                 };
+            }
+
+            function validPointOfInterest(point) {
+                return point
+                    && typeof point.id === 'string'
+                    && typeof point.title === 'string'
+                    && Object.hasOwn(poiTypes, point.type)
+                    && Array.isArray(point.coordinates)
+                    && point.coordinates.length === 2
+                    && Number.isFinite(point.coordinates[0])
+                    && Number.isFinite(point.coordinates[1])
+                    && Math.abs(point.coordinates[0]) <= 180
+                    && Math.abs(point.coordinates[1]) <= 90;
+            }
+
+            function savePointsOfInterest() {
+                try {
+                    localStorage.setItem(poiStorageKey, JSON.stringify(pointsOfInterest));
+                    return true;
+                } catch (error) {
+                    showMessage(`Impossible d’enregistrer les repères dans ce navigateur : ${error.message}`, true);
+                    return false;
+                }
+            }
+
+            function poiIcon(type) {
+                const item = poiTypes[type];
+                return L.divIcon({
+                    className: 'poi-pin',
+                    html: `<span class="poi-marker" style="background:${item.color}" aria-hidden="true">${item.symbol}</span>`,
+                    iconSize: [29, 29],
+                    iconAnchor: [14, 14],
+                    popupAnchor: [0, -13]
+                });
+            }
+
+            function renderPointsOfInterest() {
+                poiLayer.clearLayers();
+                const list = document.getElementById('poi-list');
+                list.replaceChildren();
+                if (!pointsOfInterest.length) {
+                    const empty = document.createElement('p');
+                    empty.className = 'intro';
+                    empty.textContent = 'Aucun repère ajouté.';
+                    list.appendChild(empty);
+                    return;
+                }
+                pointsOfInterest.forEach((point) => {
+                    const type = poiTypes[point.type];
+                    const marker = L.marker([point.coordinates[1], point.coordinates[0]], {
+                        icon: poiIcon(point.type),
+                        title: `${type.label} : ${point.title}`,
+                        alt: `${type.label} : ${point.title}`,
+                        keyboard: true,
+                        zIndexOffset: 450
+                    }).bindPopup(`<strong>${escapeHtml(point.title)}</strong><br>${type.label}`);
+                    if (document.getElementById('show-poi').checked) marker.addTo(poiLayer);
+
+                    const row = document.createElement('div');
+                    row.className = 'work-item';
+                    const dot = document.createElement('span');
+                    dot.className = 'legend-dot';
+                    dot.style.backgroundColor = type.color;
+                    const title = document.createElement('span');
+                    title.className = 'work-title';
+                    title.textContent = point.title;
+                    const sub = document.createElement('small');
+                    sub.textContent = type.label;
+                    title.appendChild(sub);
+                    title.addEventListener('click', () => map.setView([point.coordinates[1], point.coordinates[0]], 14));
+                    const remove = document.createElement('button');
+                    remove.type = 'button';
+                    remove.textContent = 'Supprimer';
+                    remove.setAttribute('aria-label', `Supprimer le repère ${point.title}`);
+                    remove.addEventListener('click', () => {
+                        const previous = pointsOfInterest;
+                        pointsOfInterest = pointsOfInterest.filter((item) => item.id !== point.id);
+                        if (savePointsOfInterest()) renderPointsOfInterest();
+                        else pointsOfInterest = previous;
+                    });
+                    row.append(dot, title, remove);
+                    list.appendChild(row);
+                });
             }
 
             function renderAnnotations() {
@@ -628,10 +746,12 @@
                 mode = null;
                 drawingPoints = [];
                 draftLayer.clearLayers();
+                poiDraftLayer.clearLayers();
                 document.getElementById('draw-controls').hidden = true;
                 document.getElementById('draw-line').classList.remove('active');
                 document.getElementById('draw-area').classList.remove('active');
                 document.getElementById('add-point').classList.remove('active');
+                document.getElementById('add-poi').classList.remove('active');
                 document.getElementById('measure-start').classList.remove('active');
                 map.getContainer().style.cursor = '';
                 document.getElementById('measure-finish').disabled = true;
@@ -713,6 +833,40 @@
                     }
                     return;
                 }
+                if (mode === 'poi') {
+                    const type = poiTypes[document.getElementById('poi-type').value];
+                    poiDraftLayer.clearLayers();
+                    L.marker(event.latlng, { icon: poiIcon(document.getElementById('poi-type').value), interactive: false })
+                        .addTo(poiDraftLayer);
+                    const title = window.prompt(`Nom ou description du repère (${type.label}) :`);
+                    if (title === null) {
+                        stopMode();
+                        showMessage('Ajout du repère annulé.');
+                        return;
+                    }
+                    const trimmedTitle = title.trim();
+                    if (!trimmedTitle) {
+                        showMessage('Saisis un nom pour le repère, puis reclique à son emplacement.', true);
+                        poiDraftLayer.clearLayers();
+                        return;
+                    }
+                    const point = {
+                        id: crypto.randomUUID(),
+                        title: trimmedTitle.slice(0, 100),
+                        type: document.getElementById('poi-type').value,
+                        coordinates: [event.latlng.lng, event.latlng.lat],
+                        createdAt: new Date().toISOString()
+                    };
+                    pointsOfInterest.push(point);
+                    if (savePointsOfInterest()) {
+                        renderPointsOfInterest();
+                        stopMode();
+                        showMessage(`Repère ajouté : ${point.title}.`);
+                    } else {
+                        pointsOfInterest.pop();
+                    }
+                    return;
+                }
                 if (mode === 'line' || mode === 'area') {
                     drawingPoints.push(event.latlng);
                     L.circleMarker(event.latlng, { radius: 4, color: '#fff', weight: 2, fillColor: '#9f111b' }).addTo(draftLayer);
@@ -785,6 +939,14 @@
                 if (event.currentTarget.checked) northBranchesLayer.addTo(map);
                 else map.removeLayer(northBranchesLayer);
             });
+            document.getElementById('add-poi').addEventListener('click', () => {
+                stopMode();
+                mode = 'poi';
+                document.getElementById('add-poi').classList.add('active');
+                map.getContainer().style.cursor = 'crosshair';
+                showMessage('Clique à l’emplacement de l’équipement pour ajouter un repère.');
+            });
+            document.getElementById('show-poi').addEventListener('change', renderPointsOfInterest);
             statusInputs.forEach((input) => input.addEventListener('change', renderAnnotations));
 
             document.getElementById('measure-start').addEventListener('click', startMeasure);
@@ -897,7 +1059,20 @@
                 annotationLoadError = true;
                 showMessage(`Annotations locales non chargées : ${error.message}`, true);
             }
+            try {
+                const savedPois = localStorage.getItem(poiStorageKey);
+                if (savedPois) {
+                    const parsedPois = JSON.parse(savedPois);
+                    if (!Array.isArray(parsedPois) || !parsedPois.every(validPointOfInterest)) {
+                        throw new Error('Les repères locaux ne sont pas valides.');
+                    }
+                    pointsOfInterest = parsedPois;
+                }
+            } catch (error) {
+                showMessage(`Repères locaux non chargés : ${error.message}`, true);
+            }
             renderAnnotations();
+            renderPointsOfInterest();
             fitCorridorToViewport();
             window.setTimeout(() => map.invalidateSize(), 100);
             window.addEventListener('resize', () => map.invalidateSize());
