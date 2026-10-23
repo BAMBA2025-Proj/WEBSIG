@@ -45,6 +45,13 @@
         .annotation-photo-preview button { min-height: 32px; padding: 6px 9px; border: 0; border-radius: 7px; color: #29465a; background: #edf2f5; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
         .annotation-photo-help { margin: 5px 0 0; color: #64788b; font-size: 10px; line-height: 1.4; }
         .annotation-intro { margin: 0 0 10px; color: #5c7182; font-size: 12px; line-height: 1.45; }
+        .annotation-offline { margin: 0 0 12px; padding: 9px 10px; border-radius: 7px; color: #176b45; background: #eaf6ef; font-size: 11px; line-height: 1.45; }
+        .annotation-uuid-row { display: flex; align-items: center; gap: 6px; }
+        .annotation-uuid-row input { min-width: 0; font-size: 11px; }
+        .annotation-uuid-row button { min-height: 34px; padding: 6px 9px; border: 0; border-radius: 7px; color: #29465a; background: #edf2f5; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+        .annotation-gps-row { display: flex; align-items: center; gap: 7px; }
+        .annotation-gps-row output { flex: 1; min-width: 0; color: #496174; font-size: 11px; overflow-wrap: anywhere; }
+        .annotation-gps-row button { flex: 0 0 auto; min-height: 34px; padding: 6px 9px; border: 0; border-radius: 7px; color: #29465a; background: #edf2f5; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
         .annotation-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
         .annotation-actions button, .annotation-actions .file-button, .annotation-item button { border: 0; border-radius: 7px; padding: 9px 11px; color: #29465a; background: #edf2f5; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
         .annotation-actions button:hover, .annotation-actions .file-button:hover, .annotation-item button:hover { background: #dce7ed; }
@@ -179,17 +186,47 @@
                         </div>
                     </div>
                 </details>
-                <details class="tool-section">
+                <details class="tool-section" open>
                     <summary>Ajouter un événement réseau</summary>
                     <div class="tool-content">
-                        <p class="annotation-intro">Ajoutez une annotation locale à la carte : trace, zone ou point. Les données restent dans ce navigateur tant qu’elles ne sont pas exportées.</p>
+                        <p class="annotation-intro">Renseignez le constat, ajoutez une photo si besoin et placez-le sur la carte. Les relevés sont conservés sur cet appareil, même hors connexion.</p>
+                        <p class="annotation-offline"><strong>Mode hors ligne prêt :</strong> formulaire, photos et relevés sont disponibles sur cet appareil. Le fond de carte nécessite une connexion sauf s’il est déjà en cache.</p>
                         <div class="annotation-field">
-                            <label for="annotation-title-input">Intitulé</label>
+                            <label for="annotation-uuid-input">Identifiant UUID</label>
+                            <div class="annotation-uuid-row">
+                                <input id="annotation-uuid-input" type="text" readonly aria-describedby="annotation-uuid-help">
+                                <button id="copy-annotation-uuid" type="button">Copier</button>
+                            </div>
+                            <p id="annotation-uuid-help" class="annotation-photo-help">Un identifiant indépendant est généré pour chaque constat enregistré.</p>
+                        </div>
+                        <div class="annotation-field">
+                            <label for="annotation-date-input">Date du relevé *</label>
+                            <input id="annotation-date-input" type="datetime-local" required>
+                        </div>
+                        <div class="annotation-field">
+                            <label for="annotation-agent-input">Identifiant de l’agent *</label>
+                            <input id="annotation-agent-input" type="text" maxlength="80" required placeholder="Ex. AG-014" autocomplete="off">
+                        </div>
+                        <div class="annotation-field">
+                            <label for="annotation-object-input">Type d’objet *</label>
+                            <select id="annotation-object-input" required>
+                                <option value="voie">Voie</option>
+                                <option value="gare">Gare</option>
+                                <option value="signalisation">Signalisation</option>
+                                <option value="ouvrage">Ouvrage d’art</option>
+                                <option value="passage-niveau">Passage à niveau</option>
+                                <option value="equipement">Équipement</option>
+                                <option value="autre">Autre</option>
+                            </select>
+                        </div>
+                        <div class="annotation-field">
+                            <label for="annotation-title-input">Intitulé (facultatif)</label>
                             <input id="annotation-title-input" type="text" maxlength="100" placeholder="Ex. Travaux de renouvellement">
                         </div>
                         <div class="annotation-field">
-                            <label for="annotation-status-input">Statut</label>
-                            <select id="annotation-status-input">
+                            <label for="annotation-status-input">État *</label>
+                            <select id="annotation-status-input" required>
+                                <option value="to_verify">À vérifier</option>
                                 <option value="active">En exploitation</option>
                                 <option value="works">Travaux en cours</option>
                                 <option value="neutralisee">Neutralisée</option>
@@ -199,17 +236,30 @@
                             </select>
                         </div>
                         <div class="annotation-field">
-                            <label for="annotation-note-input">Note ou référence (facultatif)</label>
-                            <textarea id="annotation-note-input" maxlength="500" placeholder="Description, date ou référence à confirmer"></textarea>
+                            <label for="annotation-description-input">Description *</label>
+                            <textarea id="annotation-description-input" maxlength="1000" required placeholder="Décrivez le constat, le repère ou l’action à prévoir"></textarea>
                         </div>
                         <div class="annotation-field">
-                            <label for="annotation-photo-input">Photo de l’événement (facultatif)</label>
+                            <label for="annotation-note-input">Note ou référence (facultatif)</label>
+                            <textarea id="annotation-note-input" maxlength="500" placeholder="Référence complémentaire"></textarea>
+                        </div>
+                        <div class="annotation-field">
+                            <label for="annotation-photo-input">Photo (facultative)</label>
                             <input id="annotation-photo-input" class="annotation-photo-input" type="file" accept="image/jpeg,image/png,image/webp">
                             <p class="annotation-photo-help">JPEG, PNG ou WebP, 12 Mo maximum. La photo est redimensionnée pour être conservée avec l’annotation.</p>
                             <div id="annotation-photo-preview" class="annotation-photo-preview" hidden>
-                                <img id="annotation-photo-image" alt="Aperçu de la photo jointe">
+                                <img id="annotation-photo-image" alt="Aperçu de la photo à joindre">
                                 <button id="remove-annotation-photo" type="button">Retirer la photo</button>
                             </div>
+                        </div>
+                        <div class="annotation-field">
+                            <label>Position GPS du constat *</label>
+                            <div class="annotation-gps-row">
+                                <output id="annotation-gps-output" aria-live="polite">À définir sur la carte</output>
+                                <button id="locate-annotation" type="button">Ma position</button>
+                                <button id="capture-gps" type="button">Choisir sur carte</button>
+                            </div>
+                            <p class="annotation-photo-help">Cliquez sur la carte pour définir le point GPS ; pour une ligne ou une zone, il s’agit du premier point du tracé.</p>
                         </div>
                         <div class="annotation-actions">
                             <button id="draw-line" class="primary" type="button">Tracer une ligne</button>
@@ -228,6 +278,7 @@
                     <summary>Annotations de cette carte</summary>
                     <div class="tool-content">
                         <div class="annotation-status-list" role="group" aria-label="Afficher ou masquer les annotations par statut">
+                            <label class="annotation-option"><input class="annotation-filter" data-annotation-status="to_verify" type="checkbox" checked><span class="annotation-swatch" style="background:#536b7d"></span>À vérifier</label>
                             <label class="annotation-option"><input class="annotation-filter" data-annotation-status="active" type="checkbox" checked><span class="annotation-swatch" style="background:#18855b"></span>En exploitation</label>
                             <label class="annotation-option"><input class="annotation-filter" data-annotation-status="works" type="checkbox" checked><span class="annotation-swatch" style="background:#d13b36"></span>Travaux en cours</label>
                             <label class="annotation-option"><input class="annotation-filter" data-annotation-status="neutralisee" type="checkbox" checked><span class="annotation-swatch" style="background:#d28a18"></span>Neutralisée</label>
@@ -502,6 +553,7 @@
         const coucheRFN = L.geoJSON(null, { style: styleLigne, onEachFeature: afficherPopup }).addTo(map);
         L.control.layers(null, { "Tronçons ferroviaires filtrés": coucheRFN }, { collapsed: true, position: "topright" }).addTo(map);
         const statutsAnnotation = {
+            to_verify: { label: "À vérifier", color: "#536b7d" },
             active: { label: "En exploitation", color: "#18855b" },
             works: { label: "Travaux en cours", color: "#d13b36" },
             neutralisee: { label: "Neutralisée", color: "#d28a18" },
@@ -517,6 +569,31 @@
         let modeAnnotation = null;
         let pointsBrouillon = [];
         let photoAnnotationEnAttente = "";
+        let positionGpsAnnotation = null;
+
+        function creerUuid() {
+            if (window.crypto && typeof window.crypto.randomUUID === "function") return window.crypto.randomUUID();
+            return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (caractere) => {
+                const aleatoire = Math.random() * 16 | 0;
+                return (caractere === "x" ? aleatoire : (aleatoire & 3 | 8)).toString(16);
+            });
+        }
+
+        function definirNouvelleSaisie() {
+            document.getElementById("annotation-uuid-input").value = creerUuid();
+            const maintenant = new Date();
+            maintenant.setMinutes(maintenant.getMinutes() - maintenant.getTimezoneOffset());
+            document.getElementById("annotation-date-input").value = maintenant.toISOString().slice(0, 16);
+        }
+
+        function definirPositionGps(latlng) {
+            positionGpsAnnotation = { latitude: latlng.lat, longitude: latlng.lng };
+            document.getElementById("annotation-gps-output").textContent =
+                `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+            document.getElementById("annotation-gps-output").dataset.state = "ok";
+        }
+
+        definirNouvelleSaisie();
 
         function afficherMessageAnnotation(texte, erreur = false) {
             const message = document.getElementById("annotation-message");
@@ -570,6 +647,21 @@
             const statut = document.createElement("div");
             statut.textContent = statutsAnnotation[feature.properties.status].label;
             contenu.appendChild(statut);
+            const infos = [
+                ["Objet", feature.properties.objectType],
+                ["État", feature.properties.state ? statutsAnnotation[feature.properties.state]?.label : null],
+                ["Relevé", feature.properties.observedAt ? new Date(feature.properties.observedAt).toLocaleString("fr-FR") : null],
+                ["Agent", feature.properties.agentId],
+                ["Position GPS", feature.properties.gps
+                    ? `${feature.properties.gps.latitude.toFixed(6)}, ${feature.properties.gps.longitude.toFixed(6)}` : null],
+                ["Description", feature.properties.description]
+            ];
+            infos.forEach(([nom, valeur]) => {
+                if (!valeur) return;
+                const ligne = document.createElement("div");
+                ligne.textContent = `${nom} : ${valeur}`;
+                contenu.appendChild(ligne);
+            });
             if (feature.properties.note) {
                 const note = document.createElement("div");
                 note.textContent = feature.properties.note;
@@ -735,7 +827,10 @@
                     ligne.appendChild(photo);
                 }
                 const statut = document.createElement("small");
-                statut.textContent = statutsAnnotation[feature.properties.status].label;
+                const date = feature.properties.observedAt
+                    ? new Date(feature.properties.observedAt).toLocaleString("fr-FR") : "";
+                const agent = feature.properties.agentId ? ` · ${feature.properties.agentId}` : "";
+                statut.textContent = `${statutsAnnotation[feature.properties.status].label}${agent}${date ? ` · ${date}` : ""}`;
                 titre.appendChild(statut);
                 titre.addEventListener("click", () => zoomerSurAnnotation(feature));
                 const supprimer = document.createElement("button");
@@ -757,21 +852,46 @@
         }
 
         function creerFeatureAnnotation(points, type) {
-            const titre = document.getElementById("annotation-title-input").value.trim();
-            if (!titre) {
-                afficherMessageAnnotation("Saisissez un intitulé avant d’enregistrer.", true);
-                document.getElementById("annotation-title-input").focus();
+            const agentId = document.getElementById("annotation-agent-input").value.trim();
+            const dateReleve = document.getElementById("annotation-date-input").value;
+            const description = document.getElementById("annotation-description-input").value.trim();
+            if (!agentId) {
+                afficherMessageAnnotation("Saisissez l’identifiant de l’agent avant d’enregistrer.", true);
+                document.getElementById("annotation-agent-input").focus();
+                return null;
+            }
+            if (!dateReleve || Number.isNaN(new Date(dateReleve).getTime())) {
+                afficherMessageAnnotation("Saisissez une date de relevé valide.", true);
+                document.getElementById("annotation-date-input").focus();
+                return null;
+            }
+            if (!description) {
+                afficherMessageAnnotation("Saisissez la description du constat avant d’enregistrer.", true);
+                document.getElementById("annotation-description-input").focus();
+                return null;
+            }
+            if (!positionGpsAnnotation) {
+                afficherMessageAnnotation("Définissez la position GPS avec « Ma position » ou « Carte » avant d’enregistrer.", true);
                 return null;
             }
             const coordonnees = points.map((point) => [point.lng, point.lat]);
             const geometryCoordinates = type === "Point" ? coordonnees[0]
                 : type === "Polygon" ? [[...coordonnees, coordonnees[0]]]
                     : coordonnees;
+            const titre = document.getElementById("annotation-title-input").value.trim()
+                || description.slice(0, 80);
             return {
                 type: "Feature",
                 properties: {
                     title: titre,
                     status: document.getElementById("annotation-status-input").value,
+                    objectType: document.getElementById("annotation-object-input").value,
+                    state: document.getElementById("annotation-status-input").value,
+                    description,
+                    uuid: document.getElementById("annotation-uuid-input").value,
+                    observedAt: new Date(dateReleve).toISOString(),
+                    agentId,
+                    gps: positionGpsAnnotation,
                     note: document.getElementById("annotation-note-input").value.trim(),
                     ...(photoAnnotationEnAttente ? { photo: photoAnnotationEnAttente } : {}),
                     createdAt: new Date().toISOString()
@@ -788,6 +908,13 @@
             }
             afficherAnnotations();
             effacerPhotoEnAttente();
+            document.getElementById("annotation-title-input").value = "";
+            document.getElementById("annotation-description-input").value = "";
+            document.getElementById("annotation-note-input").value = "";
+            document.getElementById("annotation-gps-output").textContent = "À définir sur la carte";
+            delete document.getElementById("annotation-gps-output").dataset.state;
+            positionGpsAnnotation = null;
+            definirNouvelleSaisie();
             afficherMessageAnnotation(`Annotation « ${feature.properties.title} » enregistrée dans ce navigateur.`);
             return true;
         }
@@ -799,6 +926,7 @@
             document.getElementById("draw-controls").hidden = true;
             ["draw-line", "draw-area", "add-point"].forEach((id) =>
                 document.getElementById(id).classList.remove("active"));
+            document.getElementById("capture-gps").classList.remove("active");
             map.getContainer().style.cursor = "";
         }
 
@@ -833,6 +961,14 @@
             const seuil = modeAnnotation === "area" ? 3 : 2;
             document.getElementById("save-drawing").disabled = pointsBrouillon.length < seuil;
             afficherMessageAnnotation(`${pointsBrouillon.length} point${pointsBrouillon.length > 1 ? "s" : ""} dans le tracé.`);
+        }
+
+        function demarrerCaptureGps() {
+            arreterDessin();
+            modeAnnotation = "location";
+            document.getElementById("capture-gps").classList.add("active");
+            map.getContainer().style.cursor = "crosshair";
+            afficherMessageAnnotation("Cliquez sur la carte à la position du constat.");
         }
 
         const boutonOutils = document.getElementById("toggle-tools");
@@ -935,6 +1071,36 @@
         document.getElementById("draw-line").addEventListener("click", () => demarrerDessin("line"));
         document.getElementById("draw-area").addEventListener("click", () => demarrerDessin("area"));
         document.getElementById("add-point").addEventListener("click", () => demarrerDessin("point"));
+        document.getElementById("capture-gps").addEventListener("click", demarrerCaptureGps);
+        document.getElementById("locate-annotation").addEventListener("click", () => {
+            if (!navigator.geolocation) {
+                afficherMessageAnnotation("La géolocalisation n’est pas disponible dans ce navigateur.", true);
+                return;
+            }
+            afficherMessageAnnotation("Recherche de votre position GPS…");
+            navigator.geolocation.getCurrentPosition((position) => {
+                const latlng = L.latLng(position.coords.latitude, position.coords.longitude);
+                definirPositionGps(latlng);
+                map.setView(latlng, Math.max(map.getZoom(), 13));
+                afficherMessageAnnotation("Position GPS récupérée. Vérifiez-la avant d’enregistrer le constat.");
+            }, (erreur) => {
+                const raisons = {
+                    1: "autorisation refusée",
+                    2: "position indisponible",
+                    3: "délai de localisation dépassé"
+                };
+                afficherMessageAnnotation(`Géolocalisation impossible : ${raisons[erreur.code] || erreur.message}. Vous pouvez choisir la position sur la carte.`, true);
+            }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+        });
+        document.getElementById("copy-annotation-uuid").addEventListener("click", async () => {
+            const uuid = document.getElementById("annotation-uuid-input").value;
+            try {
+                await navigator.clipboard.writeText(uuid);
+                afficherMessageAnnotation("Identifiant UUID copié.");
+            } catch (erreur) {
+                afficherMessageAnnotation(`Copie impossible : ${erreur.message}`, true);
+            }
+        });
         document.getElementById("undo-point").addEventListener("click", () => {
             pointsBrouillon.pop();
             actualiserBrouillon();
@@ -983,13 +1149,20 @@
                 const repertoires = annotations.map((feature) => {
                     const props = feature.properties;
                     const details = [
+                        ["UUID", props.uuid || ""],
+                        ["Date du relevé", props.observedAt || ""],
+                        ["Identifiant de l’agent", props.agentId || ""],
+                        ["Type d’objet", props.objectType || ""],
+                        ["État", props.state ? statutsAnnotation[props.state]?.label || props.state : ""],
+                        ["Description", props.description || ""],
+                        ["Position GPS", props.gps ? `${props.gps.latitude}, ${props.gps.longitude}` : ""],
                         ["Statut", statutsAnnotation[props.status].label],
                         ["Note", props.note || ""],
                         ["Photo (data URI)", props.photo || ""],
                         ["Créée le", props.createdAt || ""]
                     ].map(([nom, valeur]) => `<Data name="${echapperXml(nom)}"><value>${echapperXml(valeur)}</value></Data>`).join("");
-                    const description = props.photo
-                        ? `<description><![CDATA[<img src="${props.photo}" alt="${echapperXml(props.title)}" style="max-width:320px;max-height:240px"><br>${echapperXml(props.note || "")}]]></description>`
+                    const description = props.photo || props.description
+                        ? `<description><![CDATA[${props.photo ? `<img src="${props.photo}" alt="${echapperXml(props.title)}" style="max-width:320px;max-height:240px"><br>` : ""}${echapperXml(props.description || props.note || "")}]]></description>`
                         : "";
                     return `<Placemark><name>${echapperXml(props.title)}</name>${description}<ExtendedData>${details}</ExtendedData>${geometrieKml(feature.geometry)}</Placemark>`;
                 }).join("");
@@ -1006,11 +1179,19 @@
                 if (texteLibre && /^[\s]*[=+\-@]/.test(texte)) texte = `'${texte}`;
                 return `"${texte.replace(/"/g, '""')}"`;
             };
-            const enTete = ["Intitulé", "Statut", "Note", "Photo (data URI)", "Type de géométrie", "Latitude", "Longitude", "Géométrie GeoJSON", "Date de création"];
+            const enTete = ["UUID", "Date du relevé", "Identifiant de l’agent", "Type d’objet", "État", "Description", "Latitude GPS", "Longitude GPS", "Intitulé", "Statut", "Note", "Photo (data URI)", "Type de géométrie", "Latitude géométrie", "Longitude géométrie", "Géométrie GeoJSON", "Date de création"];
             const lignes = annotations.map((feature) => {
                 const props = feature.properties;
                 const coords = feature.geometry.type === "Point" ? feature.geometry.coordinates : [];
                 const valeurs = [
+                    props.uuid || "",
+                    props.observedAt || "",
+                    props.agentId || "",
+                    props.objectType || "",
+                    props.state ? statutsAnnotation[props.state]?.label || props.state : "",
+                    props.description || "",
+                    props.gps?.latitude ?? "",
+                    props.gps?.longitude ?? "",
                     props.title,
                     statutsAnnotation[props.status].label,
                     props.note || "",
@@ -1021,7 +1202,7 @@
                     JSON.stringify(feature.geometry),
                     props.createdAt || ""
                 ];
-                return valeurs.map((valeur, index) => guillemeter(valeur, [0, 1, 2, 8].includes(index))).join(";");
+                return valeurs.map((valeur, index) => guillemeter(valeur, [0, 1, 2, 3, 4, 5, 10, 11, 16].includes(index))).join(";");
             });
             const csv = `\uFEFF${[enTete.map(guillemeter).join(";"), ...lignes].join("\r\n")}`;
             telechargerFichier("annotations-reseau-ferroviaire-france.csv", csv, "text/csv;charset=utf-8");
@@ -1086,12 +1267,20 @@
         }
         document.getElementById("clear-measure").addEventListener("click", nettoyerMesure);
         map.on("click", (event) => {
+            if (modeAnnotation === "location") {
+                definirPositionGps(event.latlng);
+                arreterDessin();
+                afficherMessageAnnotation("Position GPS définie depuis la carte.");
+                return;
+            }
             if (modeAnnotation === "point") {
+                if (!positionGpsAnnotation) definirPositionGps(event.latlng);
                 const feature = creerFeatureAnnotation([event.latlng], "Point");
                 if (feature && enregistrerAnnotation(feature)) arreterDessin();
                 return;
             }
             if (modeAnnotation === "line" || modeAnnotation === "area") {
+                if (!positionGpsAnnotation) definirPositionGps(event.latlng);
                 pointsBrouillon.push(event.latlng);
                 actualiserBrouillon();
                 return;
