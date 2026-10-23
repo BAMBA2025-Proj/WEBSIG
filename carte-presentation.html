@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#17344d">
+    <title>Réseau ferroviaire · Kénitra – Marrakech</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <style>
+        :root {
+            font-family: "Segoe UI", Arial, sans-serif;
+            color: #253246;
+            background: #e9edf2;
+            font-synthesis: none;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-width: 320px; }
+        #map { position: fixed; inset: 0; z-index: 0; background: #e9edf2; }
+        .leaflet-container { font: inherit; }
+        .topbar {
+            position: fixed; top: 14px; left: 14px; right: 14px; z-index: 800;
+            display: flex; align-items: center; justify-content: space-between; gap: 18px;
+            min-height: 78px; padding: 10px 16px;
+            border: 1px solid #d6dfe6; border-left: 5px solid #087e8b; border-radius: 12px;
+            background: rgba(255,255,255,.98); box-shadow: 0 8px 28px #17212e24;
+        }
+        .brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+        .logo { width: 64px; height: 54px; flex: none; display: block; border: 1px solid #e5e7eb; border-radius: 7px; background: #fff; object-fit: contain; }
+        .brand-copy { min-width: 0; }
+        .eyebrow { display: block; margin-bottom: 3px; color: #087e8b; font-size: 9px; font-weight: 800; letter-spacing: .13em; }
+        .topbar h1 { margin: 0; color: #17344d; font-size: 18px; line-height: 1.2; }
+        .topbar p { margin: 4px 0 0; color: #64748b; font-size: 12px; }
+        .header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex: none; }
+        .source-badge { display: inline-flex; align-items: center; gap: 7px; padding: 7px 10px; border: 1px solid #e9d6ae; border-radius: 999px; background: #fff8e8; color: #79510e; font-size: 10px; font-weight: 750; white-space: nowrap; }
+        .source-badge::before { width: 7px; height: 7px; border-radius: 50%; background: #d28a18; content: ""; }
+        .panel {
+            position: fixed; top: 108px; bottom: 18px; left: 14px; z-index: 700;
+            width: 360px; max-width: calc(100vw - 28px); overflow: auto;
+            padding: 16px; border: 1px solid #dce2e9; border-radius: 10px;
+            background: rgba(255,255,255,.97); box-shadow: 0 4px 18px #17212e24;
+        }
+        .panel h2 { margin: 0 0 10px; font-size: 14px; }
+        .panel h3 { margin: 15px 0 8px; font-size: 13px; }
+        .intro { margin: 0 0 12px; color: #526174; font-size: 12px; line-height: 1.5; }
+        .notice {
+            margin: 12px 0; padding: 10px; border: 1px solid #f1d59c; border-radius: 7px;
+            background: #fff8e8; color: #744c08; font-size: 11px; line-height: 1.45;
+        }
+        .field { display: grid; gap: 5px; margin: 9px 0; }
+        .field label, .layer-option { font-size: 12px; font-weight: 650; }
+        input[type="text"], input[type="search"], select, textarea {
+            width: 100%; min-height: 36px; padding: 8px 10px; border: 1px solid #cbd5e1;
+            border-radius: 6px; background: #fff; color: #253246; font: inherit; font-size: 13px;
+        }
+        textarea { min-height: 58px; resize: vertical; }
+        input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, .file-button:focus-within {
+            outline: 3px solid #5a94dc; outline-offset: 2px;
+        }
+        .button-row { display: flex; flex-wrap: wrap; gap: 7px; margin: 8px 0; }
+        button, .file-button {
+            display: inline-flex; align-items: center; justify-content: center; min-height: 34px;
+            padding: 7px 10px; border: 1px solid #d1d9e2; border-radius: 6px;
+            background: #fff; color: #26364a; font: inherit; font-size: 12px; font-weight: 650; cursor: pointer;
+        }
+        button:hover, .file-button:hover { background: #f3f6f9; }
+        button.primary { border-color: #173f59; background: #173f59; color: #fff; }
+        button.primary:hover { background: #102d41; }
+        button.active { border-color: #087e8b; box-shadow: 0 0 0 2px #087e8b25; }
+        button:disabled { cursor: not-allowed; opacity: .5; }
+        .panel-toggle { min-height: 40px; gap: 8px; padding: 8px 12px; border-color: #173f59; background: #173f59; color: #fff; box-shadow: 0 3px 12px #17212e1c; }
+        .panel-toggle:hover { background: #102d41; }
+        .toggle-icon { font-size: 16px; line-height: 1; }
+        .layer-list { display: grid; gap: 8px; }
+        .layer-option { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+        .layer-option input { accent-color: #9f111b; }
+        .swatch { display: inline-block; width: 18px; height: 4px; border-radius: 3px; }
+        .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+        .line-existing { height: 2px; background: #9eabb8; }
+        .line-route { height: 5px; background: #087e8b; }
+        .line-lgv { height: 5px; background: #b4232e; }
+        .line-operating { background: #18855b; }
+        .line-current { background: #d13b36; }
+        .line-maintenance { background: #d28a18; }
+        .line-planned { background: #8a55b5; }
+        .line-complete { background: #18855b; }
+        .measurement, .message { margin: 9px 0; padding: 9px; border-radius: 6px; font-size: 12px; line-height: 1.4; }
+        .measurement { background: #eef5ff; color: #1d4b84; font-weight: 700; }
+        .message { background: #eef2f6; color: #435267; }
+        .message.error { background: #fff0ef; color: #a5261f; }
+        .work-list { display: grid; gap: 7px; margin: 8px 0; }
+        .work-item { display: flex; align-items: center; gap: 7px; padding: 7px; border: 1px solid #e1e7ee; border-radius: 6px; }
+        .work-item .work-title { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 12px; cursor: pointer; }
+        .work-item small { display: block; margin-top: 2px; color: #64748b; font-size: 10px; }
+        .work-item button { min-height: 28px; padding: 4px 7px; }
+        .file-button input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+        .attribution-note { margin: 12px 0 0; color: #64748b; font-size: 10px; line-height: 1.4; }
+        .leaflet-control-attribution { font-size: 10px !important; }
+        @media (max-width: 650px) {
+            .topbar { top: 8px; right: 8px; left: 8px; min-height: 68px; gap: 8px; padding: 7px 9px; }
+            .brand { gap: 8px; }
+            .logo { width: 45px; height: 42px; }
+            .eyebrow { font-size: 8px; }
+            .topbar h1 { font-size: 13px; }
+            .topbar p { font-size: 9px; }
+            .header-actions { gap: 5px; }
+            .source-badge { max-width: 112px; padding: 5px 7px; font-size: 8px; white-space: normal; }
+            .panel-toggle { min-height: 36px; padding: 6px 8px; }
+            .toggle-label { display: none; }
+            .panel {
+                top: auto; right: 8px; bottom: 8px; left: 8px; width: auto;
+                max-width: none; max-height: 43vh; padding: 12px;
+            }
+            .panel h3 { margin-top: 11px; }
+            .leaflet-bottom { bottom: 44vh; }
+            .leaflet-left { left: 8px; }
+            .leaflet-top { top: 74px; }
+        }
+        @media (max-width: 400px) {
+            .source-badge { display: none; }
+            .topbar p { display: none; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+        }
+    </style>
+</head>
+<body>
+    <div id="map" aria-label="Carte interactive indicative du corridor ferroviaire Kénitra–Marrakech"></div>
+    <header class="topbar">
+        <div class="brand">
+            <img class="logo" src="assets/logo-projet.jpg" alt="Logo du projet fourni">
+            <div class="brand-copy">
+                <span class="eyebrow">RÉSEAU FERROVIAIRE · MAROC</span>
+                <h1>Corridor Kénitra – Marrakech</h1>
+                <p>Carte de suivi des infrastructures et des interventions</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <span class="source-badge">Voies OSM · non certifiées</span>
+            <button id="toggle-panel" class="panel-toggle" type="button" aria-controls="tools-panel" aria-expanded="true" aria-label="Masquer les outils">
+                <span class="toggle-icon" aria-hidden="true">☰</span>
+                <span class="toggle-label">Masquer les outils</span>
+            </button>
+        </div>
+    </header>
+
+    <aside id="tools-panel" class="panel" aria-label="Outils cartographiques">
+        <section>
+            <h2>Rechercher une gare</h2>
+            <div class="field">
+                <label for="station-search">Nom de la gare</label>
+                <input id="station-search" type="search" list="station-list" placeholder="Ex. Rabat Agdal" autocomplete="off">
+                <datalist id="station-list"></datalist>
+            </div>
+            <div class="button-row">
+                <button id="search-button" class="primary" type="button">Centrer sur la gare</button>
+                <button id="clear-search" type="button">Effacer</button>
+            </div>
+        </section>
+
+        <div class="notice">
+            <strong>Carte de travail — données non certifiées.</strong>
+            Fond neutre Esri. Les voies proviennent du GeoPackage OpenStreetMap fourni (instantané du 30/10/2025) : ce n’est ni un inventaire officiel du réseau ferré national ni une donnée certifiée ONCF. L’axe bleu est un itinéraire indicatif raccordé à ces voies, pas un tracé certifié. Le tracé exact et les états d’exploitation restent à valider par le projet.
+        </div>
+
+        <section>
+            <h3>Couches visibles</h3>
+            <div class="layer-list">
+                <label class="layer-option"><input id="show-stations" type="checkbox" checked> Gares repères</label>
+                <label class="layer-option"><input id="show-route" type="checkbox" checked><span class="swatch line-route"></span> Axe Kénitra–Marrakech (itinéraire indicatif OSM)</label>
+                <label class="layer-option"><input id="show-corridor" type="checkbox" checked><span class="swatch line-existing"></span> Autres voies du secteur (OSM)</label>
+                <label class="layer-option"><input id="show-north-branches" type="checkbox"><span class="swatch line-lgv"></span> Réseau au nord de Kénitra (contexte)</label>
+                <label class="layer-option"><input class="show-status" data-status="exploite" type="checkbox" checked><span class="swatch line-operating"></span> En exploitation</label>
+                <label class="layer-option"><input class="show-status" data-status="en-cours" type="checkbox" checked><span class="swatch line-current"></span> Travaux en cours</label>
+                <label class="layer-option"><input class="show-status" data-status="maintenance" type="checkbox" checked><span class="swatch line-maintenance"></span> Maintenance</label>
+                <label class="layer-option"><input class="show-status" data-status="previsionnel" type="checkbox" checked><span class="swatch line-planned"></span> Prévisionnel</label>
+                <label class="layer-option"><input class="show-status" data-status="termine" type="checkbox" checked><span class="swatch line-complete"></span> Réalisé / modifié</label>
+            </div>
+        </section>
+
+        <section>
+            <h3>Mesurer une distance</h3>
+            <p class="intro">Clique sur « Démarrer », puis sur au moins deux points de la carte. La distance suit les clics, pas le tracé exact des voies.</p>
+            <div class="button-row">
+                <button id="measure-start" type="button">Démarrer la mesure</button>
+                <button id="measure-finish" type="button" disabled>Terminer</button>
+                <button id="measure-clear" type="button">Effacer</button>
+            </div>
+            <output id="measure-result" class="measurement" aria-live="polite" hidden></output>
+        </section>
+
+        <section>
+            <h3>Ajouter un événement réseau</h3>
+            <p class="intro">Dessine un linéaire, une zone ou place un point sur la carte. Les annotations sont locales et à valider avant diffusion.</p>
+            <div class="field">
+                <label for="work-title">Intitulé</label>
+                <input id="work-title" type="text" maxlength="100" placeholder="Ex. Renouvellement de voie">
+            </div>
+            <div class="field">
+                <label for="work-status">Statut</label>
+                <select id="work-status">
+                    <option value="exploite">En exploitation</option>
+                    <option value="en-cours">Travaux en cours</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="previsionnel">Prévisionnel</option>
+                    <option value="termine">Réalisé / modifié</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="work-note">Note / référence (facultatif)</label>
+                <textarea id="work-note" maxlength="500" placeholder="Description, date ou référence à confirmer"></textarea>
+            </div>
+            <div class="button-row">
+                <button id="draw-line" class="primary" type="button">Tracer un linéaire</button>
+                <button id="draw-area" type="button">Tracer une zone</button>
+                <button id="add-point" type="button">Placer un point</button>
+            </div>
+            <div id="draw-controls" class="button-row" hidden>
+                <button id="undo-point" type="button">Annuler le dernier point</button>
+                <button id="save-drawing" class="primary" type="button" disabled>Enregistrer le tracé</button>
+                <button id="cancel-drawing" type="button">Annuler</button>
+            </div>
+        </section>
+
+        <section>
+            <h3>Annotations de cette carte</h3>
+            <div id="work-list" class="work-list"><p class="intro">Aucune annotation enregistrée.</p></div>
+            <div class="button-row">
+                <button id="export-data" type="button">Exporter GeoJSON</button>
+                <label class="file-button">Importer GeoJSON
+                    <input id="import-data" type="file" accept=".geojson,.json,application/geo+json,application/json">
+                </label>
+            </div>
+            <p class="attribution-note">Source des voies : GeoPackage OpenStreetMap fourni, instantané 2025-10-30 ; ODbL 1.0. Attributions &copy; OpenStreetMap contributors et Esri. Ce GeoPackage n’est pas un inventaire officiel certifié par l’ONCF/RFN. Les annotations sont conservées séparément pour cette carte dans ce navigateur ; exporte-les en GeoJSON pour les partager.</p>
+        </section>
+        <p id="app-message" class="message" role="status" aria-live="polite">Chargement de la carte…</p>
+    </aside>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        (() => {
+            const message = document.getElementById('app-message');
+            const storageKey = 'websig-kenitra-marrakech-annotations-presentation-v1';
+            const statusLabels = {
+                exploite: 'En exploitation',
+                'en-cours': 'Travaux en cours',
+                maintenance: 'Maintenance',
+                previsionnel: 'Prévisionnel',
+                termine: 'Réalisé / modifié'
+            };
+            const statusColors = {
+                exploite: '#18855b',
+                'en-cours': '#d13b36',
+                maintenance: '#d28a18',
+                previsionnel: '#8a55b5',
+                termine: '#18855b'
+            };
+            const stations = [
+                { name: 'Kénitra', aliases: 'kenitra', lat: 34.261, lon: -6.580 },
+                { name: 'Salé Tabriquet', aliases: 'sale tabriquet', lat: 34.045, lon: -6.790 },
+                { name: 'Rabat Ville', aliases: 'rabat ville', lat: 34.022, lon: -6.839 },
+                { name: 'Rabat Agdal', aliases: 'rabat agdal', lat: 33.990, lon: -6.851 },
+                { name: 'Témara', aliases: 'temara', lat: 33.923, lon: -6.918 },
+                { name: 'Skhirat', aliases: 'skhirat', lat: 33.850, lon: -7.037 },
+                { name: 'Bouznika', aliases: 'bouznika', lat: 33.789, lon: -7.159 },
+                { name: 'Mohammédia', aliases: 'mohammedia', lat: 33.687, lon: -7.383 },
+                { name: 'Casa Voyageurs', aliases: 'casablanca casa voyageurs', lat: 33.597, lon: -7.590 },
+                { name: 'Casa Oasis', aliases: 'casablanca casa oasis', lat: 33.566, lon: -7.621 },
+                { name: 'Bouskoura', aliases: 'bouskoura', lat: 33.449, lon: -7.652 },
+                { name: 'Berrechid', aliases: 'berrechid', lat: 33.265, lon: -7.587 },
+                { name: 'Settat', aliases: 'settat', lat: 33.002, lon: -7.620 },
+                { name: 'Benguerir', aliases: 'ben guerir benguerir', lat: 32.235, lon: -7.951 },
+                { name: 'Marrakech', aliases: 'marrakech marrakesh', lat: 31.629, lon: -8.018 }
+            ];
+
+            function showMessage(text, isError = false) {
+                message.textContent = text;
+                message.classList.toggle('error', isError);
+            }
+
+            function normalize(text) {
+                return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr').trim();
+            }
+
+            if (!window.L) {
+                showMessage('La bibliothèque cartographique n’a pas pu être chargée. Vérifie la connexion Internet puis actualise la page.', true);
+                return;
+            }
+
+            const map = L.map('map', { zoomControl: false, doubleClickZoom: true }).setView([33.08, -7.36], 7);
+            L.control.zoom({ position: 'topright' }).addTo(map);
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                attribution: 'Tiles &copy; <a href="https://www.esri.com/">Esri</a>, DeLorme, NAVTEQ'
+            }).addTo(map);
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                attribution: ''
+            }).addTo(map);
+
+            const stationLayer = L.featureGroup().addTo(map);
+            const corridorLayer = L.featureGroup().addTo(map);
+            const routeLayer = L.featureGroup().addTo(map);
+            const northBranchesLayer = L.featureGroup();
+            const draftLayer = L.featureGroup().addTo(map);
+            const workLayers = {};
+            Object.keys(statusLabels).forEach((status) => {
+                workLayers[status] = L.featureGroup().addTo(map);
+            });
+            const corridorPoints = stations.map((station) => [station.lat, station.lon]);
+            const railwayStyle = (feature) => {
+                const name = normalize(feature.properties.name || '');
+                const isHighSpeed = name.includes('grande vitesse') || name.includes('lgv') || name.includes('al boraq');
+                return {
+                    color: isHighSpeed ? '#b4232e' : '#9eabb8',
+                    weight: isHighSpeed ? 3.5 : 1.8,
+                    opacity: isHighSpeed ? 0.84 : 0.58,
+                    lineCap: 'round',
+                    lineJoin: 'round'
+                };
+            };
+            const routeStyle = {
+                color: '#087e8b',
+                weight: 5,
+                opacity: 0.96,
+                lineCap: 'round',
+                lineJoin: 'round'
+            };
+
+            fetch('data/reseau-ferre-osm.geojson')
+                .then((response) => {
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return response.json();
+                })
+                .then((railwayData) => {
+                    const corridorData = {
+                        ...railwayData,
+                        features: railwayData.features.filter((feature) => feature.properties.region === 'axe-kenitra-marrakech')
+                    };
+                    const northData = {
+                        ...railwayData,
+                        features: railwayData.features.filter((feature) => feature.properties.region === 'nord-kenitra')
+                    };
+                    const routeData = {
+                        ...railwayData,
+                        features: railwayData.features.filter((feature) => feature.properties.region === 'axe-principal-kenitra-marrakech')
+                    };
+                    L.geoJSON(corridorData, {
+                        style: railwayStyle,
+                        onEachFeature: (feature, layer) => {
+                            const name = feature.properties.name
+                                ? `<br>${escapeHtml(feature.properties.name)}`
+                                : '';
+                            layer.bindPopup(`<strong>Voie ferrée — OpenStreetMap</strong>${name}<br><small>Géométrie indicative, non certifiée ONCF</small>`);
+                        }
+                    }).addTo(corridorLayer);
+                    L.geoJSON(northData, {
+                        style: railwayStyle,
+                        onEachFeature: (feature, layer) => layer.bindPopup('<strong>Voie ferrée — OpenStreetMap</strong><br><small>Réseau au nord de Kénitra · couche de contexte</small>')
+                    }).addTo(northBranchesLayer);
+                    L.geoJSON(routeData, {
+                        style: routeStyle,
+                        onEachFeature: (feature, layer) => layer.bindPopup(
+                            `<strong>${escapeHtml(feature.properties.name)}</strong><br><small>${feature.properties.length_km.toLocaleString('fr-FR')} km · itinéraire indicatif calculé dans le réseau OSM, non certifié ONCF</small>`
+                        )
+                    }).addTo(routeLayer);
+                    showMessage(`${corridorData.features.length.toLocaleString('fr-FR')} tronçons OSM chargés pour le secteur ; l’axe indicatif Kénitra–Marrakech est mis en évidence.`);
+                })
+                .catch((error) => {
+                    showMessage(`Impossible de charger le réseau ferroviaire fourni : ${error.message}`, true);
+                });
+
+            const markersByStation = new Map();
+            stations.forEach((station) => {
+                const marker = L.circleMarker([station.lat, station.lon], {
+                    radius: 5, weight: 2, color: '#fff', fillColor: '#9f111b', fillOpacity: 1
+                }).bindPopup(`<strong>${station.name}</strong><br><small>Repère géographique indicatif</small>`);
+                marker.addTo(stationLayer);
+                markersByStation.set(station.name, marker);
+                const option = document.createElement('option');
+                option.value = station.name;
+                document.getElementById('station-list').appendChild(option);
+            });
+
+            let annotations = [];
+            let annotationLoadError = false;
+            let mode = null;
+            let drawingPoints = [];
+            let measurePoints = [];
+            let measureLine = null;
+            let measureMarkers = [];
+            const statusInputs = Array.from(document.querySelectorAll('.show-status'));
+
+            function validFeature(feature) {
+                if (!feature || feature.type !== 'Feature' || !feature.geometry) return false;
+                if (!['Point', 'LineString', 'MultiLineString', 'Polygon'].includes(feature.geometry.type)) return false;
+                if (!feature.properties || !Object.hasOwn(statusLabels, feature.properties.status)) return false;
+                if (typeof feature.properties.title !== 'string') return false;
+                const validPosition = (position) => Array.isArray(position)
+                    && position.length >= 2
+                    && Number.isFinite(position[0])
+                    && Number.isFinite(position[1])
+                    && Math.abs(position[0]) <= 180
+                    && Math.abs(position[1]) <= 90;
+                const coordinates = feature.geometry.coordinates;
+                if (feature.geometry.type === 'Point') return validPosition(coordinates);
+                if (feature.geometry.type === 'LineString') {
+                    return Array.isArray(coordinates) && coordinates.length >= 2 && coordinates.every(validPosition);
+                }
+                if (feature.geometry.type === 'MultiLineString') {
+                    return Array.isArray(coordinates)
+                        && coordinates.length > 0
+                        && coordinates.every((line) => Array.isArray(line) && line.length >= 2 && line.every(validPosition));
+                }
+                return Array.isArray(coordinates)
+                    && coordinates.length > 0
+                    && coordinates.every((ring) => Array.isArray(ring)
+                        && ring.length >= 4
+                        && ring.every(validPosition)
+                        && ring[0][0] === ring[ring.length - 1][0]
+                        && ring[0][1] === ring[ring.length - 1][1]);
+            }
+
+            function saveAnnotations() {
+                try {
+                    localStorage.setItem(storageKey, JSON.stringify(annotations));
+                } catch (error) {
+                    showMessage(`Impossible d’enregistrer les annotations dans ce navigateur : ${error.message}`, true);
+                    return false;
+                }
+                return true;
+            }
+
+            function featureStyle(feature) {
+                const color = statusColors[feature.properties.status];
+                return {
+                    color, weight: 6, opacity: 0.9, lineCap: 'round', lineJoin: 'round',
+                    fillColor: color, fillOpacity: feature.geometry.type === 'Polygon' ? 0.22 : 0
+                };
+            }
+
+            function renderAnnotations() {
+                Object.values(workLayers).forEach((layer) => layer.clearLayers());
+                annotations.forEach((feature, index) => {
+                    const layer = L.geoJSON(feature, {
+                        style: featureStyle,
+                        pointToLayer: (geoFeature, latlng) => L.circleMarker(latlng, {
+                            radius: 8, color: '#fff', weight: 2, fillColor: statusColors[geoFeature.properties.status], fillOpacity: 1
+                        }),
+                        onEachFeature: (geoFeature, layer) => {
+                            const props = geoFeature.properties;
+                            const note = props.note ? `<br>${escapeHtml(props.note)}` : '';
+                            layer.bindPopup(`<strong>${escapeHtml(props.title)}</strong><br>${statusLabels[props.status]}${note}`);
+                        }
+                    });
+                    if (document.querySelector(`.show-status[data-status="${feature.properties.status}"]`).checked) {
+                        layer.addTo(workLayers[feature.properties.status]);
+                    }
+                    layer.eachLayer((child) => child.featureIndex = index);
+                });
+                renderAnnotationList();
+            }
+
+            function escapeHtml(text) {
+                const element = document.createElement('span');
+                element.textContent = text;
+                return element.innerHTML;
+            }
+
+            function renderAnnotationList() {
+                const list = document.getElementById('work-list');
+                list.replaceChildren();
+                if (!annotations.length) {
+                    const empty = document.createElement('p');
+                    empty.className = 'intro';
+                    empty.textContent = 'Aucune annotation enregistrée.';
+                    list.appendChild(empty);
+                    return;
+                }
+                annotations.forEach((feature, index) => {
+                    const row = document.createElement('div');
+                    row.className = 'work-item';
+                    const dot = document.createElement('span');
+                    dot.className = 'legend-dot';
+                    dot.style.backgroundColor = statusColors[feature.properties.status];
+                    const title = document.createElement('span');
+                    title.className = 'work-title';
+                    title.textContent = feature.properties.title;
+                    const sub = document.createElement('small');
+                    sub.textContent = statusLabels[feature.properties.status];
+                    title.appendChild(sub);
+                    title.addEventListener('click', () => zoomToFeature(feature));
+                    const remove = document.createElement('button');
+                    remove.type = 'button';
+                    remove.textContent = 'Supprimer';
+                    remove.setAttribute('aria-label', `Supprimer ${feature.properties.title}`);
+                    remove.addEventListener('click', () => {
+                        const [removed] = annotations.splice(index, 1);
+                        if (saveAnnotations()) renderAnnotations();
+                        else annotations.splice(index, 0, removed);
+                    });
+                    row.append(dot, title, remove);
+                    list.appendChild(row);
+                });
+            }
+
+            function zoomToFeature(feature) {
+                if (feature.geometry.type === 'Point') {
+                    const [longitude, latitude] = feature.geometry.coordinates;
+                    map.setView([latitude, longitude], 13);
+                    return;
+                }
+                const layer = L.geoJSON(feature);
+                const bounds = layer.getBounds();
+                if (bounds.isValid()) map.fitBounds(bounds.pad(0.5), { maxZoom: 13 });
+            }
+
+            function featureFromPoints(points, geometryType) {
+                const title = document.getElementById('work-title').value.trim();
+                if (!title) {
+                    showMessage('Saisis un intitulé avant d’enregistrer.', true);
+                    document.getElementById('work-title').focus();
+                    return null;
+                }
+                const status = document.getElementById('work-status').value;
+                const note = document.getElementById('work-note').value.trim();
+                const coordinates = points.map((point) => [point.lng, point.lat]);
+                const geometryCoordinates = geometryType === 'Point'
+                    ? coordinates[0]
+                    : geometryType === 'Polygon'
+                        ? [[...coordinates, coordinates[0]]]
+                        : coordinates;
+                return {
+                    type: 'Feature',
+                    properties: { title, status, note, createdAt: new Date().toISOString() },
+                    geometry: {
+                        type: geometryType,
+                        coordinates: geometryCoordinates
+                    }
+                };
+            }
+
+            function stopMode() {
+                mode = null;
+                drawingPoints = [];
+                draftLayer.clearLayers();
+                document.getElementById('draw-controls').hidden = true;
+                document.getElementById('draw-line').classList.remove('active');
+                document.getElementById('draw-area').classList.remove('active');
+                document.getElementById('add-point').classList.remove('active');
+                document.getElementById('measure-start').classList.remove('active');
+                map.getContainer().style.cursor = '';
+                document.getElementById('measure-finish').disabled = true;
+            }
+
+            function saveFeature(feature) {
+                annotations.push(feature);
+                if (!saveAnnotations()) {
+                    annotations.pop();
+                    return;
+                }
+                renderAnnotations();
+                showMessage(`Annotation enregistrée : ${feature.properties.title}. Elle reste locale à ce navigateur.`);
+            }
+
+            function startLineDrawing() {
+                stopMode();
+                mode = 'line';
+                document.getElementById('draw-controls').hidden = false;
+                document.getElementById('draw-line').classList.add('active');
+                map.getContainer().style.cursor = 'crosshair';
+                showMessage('Clique sur la carte pour ajouter les points du linéaire, puis termine le tracé.');
+            }
+
+            function startAreaDrawing() {
+                stopMode();
+                mode = 'area';
+                document.getElementById('draw-controls').hidden = false;
+                document.getElementById('draw-area').classList.add('active');
+                map.getContainer().style.cursor = 'crosshair';
+                showMessage('Clique sur au moins trois points pour dessiner la zone, puis termine le tracé.');
+            }
+
+            function startPointDrawing() {
+                stopMode();
+                mode = 'point';
+                document.getElementById('add-point').classList.add('active');
+                map.getContainer().style.cursor = 'crosshair';
+                showMessage('Clique à l’emplacement de l’événement pour ajouter le point.');
+            }
+
+            function startMeasure() {
+                stopMode();
+                mode = 'measure';
+                measurePoints = [];
+                if (measureLine) map.removeLayer(measureLine);
+                measureMarkers.forEach((marker) => map.removeLayer(marker));
+                measureMarkers = [];
+                const result = document.getElementById('measure-result');
+                result.hidden = false;
+                result.textContent = 'Clique sur au moins deux points de la carte.';
+                document.getElementById('measure-start').classList.add('active');
+                document.getElementById('measure-finish').disabled = false;
+                map.getContainer().style.cursor = 'crosshair';
+                showMessage('Mode mesure actif. Ajoute des points, puis clique sur « Terminer ».');
+            }
+
+            map.on('click', (event) => {
+                if (mode === 'measure') {
+                    measurePoints.push(event.latlng);
+                    measureMarkers.push(L.circleMarker(event.latlng, {
+                        radius: 4, color: '#fff', weight: 2, fillColor: '#1266b1', fillOpacity: 1
+                    }).addTo(map));
+                    if (measureLine) map.removeLayer(measureLine);
+                    if (measurePoints.length > 1) {
+                        measureLine = L.polyline(measurePoints, { color: '#1266b1', weight: 3 }).addTo(map);
+                        const meters = measurePoints.slice(1).reduce((total, point, index) => {
+                            return total + map.distance(measurePoints[index], point);
+                        }, 0);
+                        document.getElementById('measure-result').textContent = `Distance mesurée : ${meters >= 1000 ? `${(meters / 1000).toFixed(2)} km` : `${Math.round(meters)} m`}`;
+                    }
+                    return;
+                }
+                if (mode === 'point') {
+                    const feature = featureFromPoints([event.latlng], 'Point');
+                    if (feature) {
+                        saveFeature(feature);
+                        stopMode();
+                    }
+                    return;
+                }
+                if (mode === 'line' || mode === 'area') {
+                    drawingPoints.push(event.latlng);
+                    L.circleMarker(event.latlng, { radius: 4, color: '#fff', weight: 2, fillColor: '#9f111b' }).addTo(draftLayer);
+                    if ((mode === 'line' && drawingPoints.length > 1) || (mode === 'area' && drawingPoints.length > 2)) {
+                        draftLayer.eachLayer((layer) => {
+                            if (layer instanceof L.Polyline && !(layer instanceof L.CircleMarker)) draftLayer.removeLayer(layer);
+                        });
+                        const style = { color: '#9f111b', weight: 4, dashArray: '7 5', fillColor: '#9f111b', fillOpacity: 0.15 };
+                        if (mode === 'area') L.polygon(drawingPoints, style).addTo(draftLayer);
+                        else L.polyline(drawingPoints, style).addTo(draftLayer);
+                    }
+                    document.getElementById('save-drawing').disabled = drawingPoints.length < (mode === 'area' ? 3 : 2);
+                    showMessage(`${drawingPoints.length} point${drawingPoints.length > 1 ? 's' : ''} dans le tracé.`);
+                }
+            });
+
+            document.getElementById('search-button').addEventListener('click', () => {
+                const query = normalize(document.getElementById('station-search').value);
+                if (!query) {
+                    showMessage('Saisis le nom d’une gare à rechercher.', true);
+                    return;
+                }
+                const station = stations.find((item) => normalize(`${item.name} ${item.aliases}`).includes(query));
+                if (!station) {
+                    showMessage('Gare introuvable dans les repères de l’axe. Essaie un autre nom.', true);
+                    return;
+                }
+                stationLayer.addTo(map);
+                document.getElementById('show-stations').checked = true;
+                map.setView([station.lat, station.lon], 12);
+                markersByStation.get(station.name).openPopup();
+                showMessage(`Carte centrée sur ${station.name}.`);
+            });
+            document.getElementById('station-search').addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') document.getElementById('search-button').click();
+                if (event.key === 'Escape') event.currentTarget.value = '';
+            });
+            document.getElementById('clear-search').addEventListener('click', () => {
+                document.getElementById('station-search').value = '';
+                showMessage('Recherche effacée.');
+            });
+            document.getElementById('toggle-panel').addEventListener('click', (event) => {
+                const panel = document.getElementById('tools-panel');
+                const hidden = !panel.hidden;
+                panel.hidden = hidden;
+                event.currentTarget.setAttribute('aria-expanded', String(!hidden));
+                const label = event.currentTarget.querySelector('.toggle-label');
+                label.textContent = hidden ? 'Afficher les outils' : 'Masquer les outils';
+                event.currentTarget.setAttribute('aria-label', label.textContent);
+                window.setTimeout(() => map.invalidateSize(), 100);
+            });
+            document.getElementById('show-stations').addEventListener('change', (event) => {
+                if (event.currentTarget.checked) stationLayer.addTo(map);
+                else map.removeLayer(stationLayer);
+            });
+            document.getElementById('show-corridor').addEventListener('change', (event) => {
+                if (event.currentTarget.checked) corridorLayer.addTo(map);
+                else map.removeLayer(corridorLayer);
+            });
+            document.getElementById('show-route').addEventListener('change', (event) => {
+                if (event.currentTarget.checked) routeLayer.addTo(map);
+                else map.removeLayer(routeLayer);
+            });
+            document.getElementById('show-north-branches').addEventListener('change', (event) => {
+                if (event.currentTarget.checked) northBranchesLayer.addTo(map);
+                else map.removeLayer(northBranchesLayer);
+            });
+            statusInputs.forEach((input) => input.addEventListener('change', renderAnnotations));
+
+            document.getElementById('measure-start').addEventListener('click', startMeasure);
+            document.getElementById('measure-finish').addEventListener('click', () => {
+                if (measurePoints.length < 2) {
+                    showMessage('Ajoute au moins deux points avant de terminer la mesure.', true);
+                    return;
+                }
+                stopMode();
+                showMessage('Mesure terminée. Clique sur « Effacer » pour la retirer.');
+            });
+            document.getElementById('measure-clear').addEventListener('click', () => {
+                if (measureLine) map.removeLayer(measureLine);
+                measureLine = null;
+                measureMarkers.forEach((marker) => map.removeLayer(marker));
+                measureMarkers = [];
+                measurePoints = [];
+                document.getElementById('measure-result').hidden = true;
+                if (mode === 'measure') stopMode();
+                showMessage('Mesure effacée.');
+            });
+            document.getElementById('draw-line').addEventListener('click', startLineDrawing);
+            document.getElementById('draw-area').addEventListener('click', startAreaDrawing);
+            document.getElementById('add-point').addEventListener('click', startPointDrawing);
+            document.getElementById('undo-point').addEventListener('click', () => {
+                if (!drawingPoints.length) return;
+                const drawingMode = mode;
+                const remaining = drawingPoints.slice(0, -1);
+                stopMode();
+                mode = drawingMode;
+                document.getElementById('draw-controls').hidden = false;
+                document.getElementById(drawingMode === 'area' ? 'draw-area' : 'draw-line').classList.add('active');
+                map.getContainer().style.cursor = 'crosshair';
+                drawingPoints = remaining;
+                remaining.forEach((point) => {
+                    L.circleMarker(point, { radius: 4, color: '#fff', weight: 2, fillColor: '#9f111b' }).addTo(draftLayer);
+                });
+                if ((drawingMode === 'line' && drawingPoints.length > 1) || (drawingMode === 'area' && drawingPoints.length > 2)) {
+                    const style = { color: '#9f111b', weight: 4, dashArray: '7 5', fillColor: '#9f111b', fillOpacity: 0.15 };
+                    if (drawingMode === 'area') L.polygon(drawingPoints, style).addTo(draftLayer);
+                    else L.polyline(drawingPoints, style).addTo(draftLayer);
+                }
+                document.getElementById('save-drawing').disabled = drawingPoints.length < (drawingMode === 'area' ? 3 : 2);
+                showMessage(`${drawingPoints.length} point${drawingPoints.length > 1 ? 's' : ''} dans le tracé.`);
+            });
+            document.getElementById('save-drawing').addEventListener('click', () => {
+                if (drawingPoints.length < (mode === 'area' ? 3 : 2)) return;
+                const geometryType = mode === 'area' ? 'Polygon' : 'LineString';
+                const feature = featureFromPoints(drawingPoints, geometryType);
+                if (feature) {
+                    saveFeature(feature);
+                    stopMode();
+                }
+            });
+            document.getElementById('cancel-drawing').addEventListener('click', () => {
+                stopMode();
+                showMessage('Tracé annulé.');
+            });
+
+            document.getElementById('export-data').addEventListener('click', () => {
+                const collection = { type: 'FeatureCollection', name: 'annotations-corridor-kenitra-marrakech-presentation', features: annotations };
+                const blob = new Blob([JSON.stringify(collection, null, 2)], { type: 'application/geo+json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'annotations-kenitra-marrakech-presentation.geojson';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+                showMessage('Fichier GeoJSON exporté.');
+            });
+            document.getElementById('import-data').addEventListener('change', async (event) => {
+                const input = event.currentTarget;
+                const file = input.files[0];
+                if (!file) return;
+                try {
+                    const parsed = JSON.parse(await file.text());
+                    const features = parsed.type === 'FeatureCollection' && Array.isArray(parsed.features)
+                        ? parsed.features
+                        : parsed.type === 'Feature' ? [parsed] : null;
+                    if (!features || !features.every(validFeature)) {
+                        throw new Error('Le GeoJSON doit contenir des points ou lignes avec un titre et un statut valide.');
+                    }
+                    const previous = annotations;
+                    annotations = features;
+                    if (!saveAnnotations()) {
+                        annotations = previous;
+                        return;
+                    }
+                    renderAnnotations();
+                    showMessage(`${features.length} annotation${features.length === 1 ? '' : 's'} GeoJSON importée${features.length === 1 ? '' : 's'}.`);
+                } catch (error) {
+                    showMessage(`Import GeoJSON impossible : ${error.message}`, true);
+                } finally {
+                    input.value = '';
+                }
+            });
+
+            try {
+                const saved = localStorage.getItem(storageKey);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (!Array.isArray(parsed) || !parsed.every(validFeature)) {
+                        throw new Error('Les données locales ne sont pas valides.');
+                    }
+                    annotations = parsed;
+                }
+            } catch (error) {
+                annotationLoadError = true;
+                showMessage(`Annotations locales non chargées : ${error.message}`, true);
+            }
+            renderAnnotations();
+            const bounds = L.latLngBounds(corridorPoints);
+            const mobile = window.matchMedia('(max-width: 650px)').matches;
+            map.fitBounds(bounds, {
+                paddingTopLeft: mobile ? [20, 80] : [400, 120],
+                paddingBottomRight: mobile ? [20, window.innerHeight * 0.46] : [40, 35],
+                maxZoom: 8
+            });
+            window.setTimeout(() => map.invalidateSize(), 100);
+            window.addEventListener('resize', () => map.invalidateSize());
+            if (!annotations.length && !annotationLoadError) {
+                showMessage('Carte prête. Les travaux et prévisions apparaîtront après leur saisie ou import GeoJSON.');
+            }
+        })();
+    </script>
+</body>
+</html>
