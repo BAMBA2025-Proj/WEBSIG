@@ -402,7 +402,7 @@
             </div>
             <p class="attribution-note">Les annotations sont conservées séparément pour cette carte dans ce navigateur ; exporte-les en GeoJSON pour les partager. Les détails sur les données cartographiques sont disponibles dans « Sources et limites des données ».</p>
         </details>
-        <p id="app-message" class="message" role="status" aria-live="polite">Chargement de la carte…</p>
+        <p id="app-message" class="message" role="status" aria-live="polite" hidden></p>
     </aside>
 
     <script src="assets/leaflet/leaflet.js"></script>
@@ -455,6 +455,7 @@
             function showMessage(text, isError = false) {
                 message.textContent = text;
                 message.classList.toggle('error', isError);
+                message.hidden = false;
             }
 
             function normalize(text) {
@@ -586,7 +587,6 @@
                             `<strong>Axe Kénitra–Marrakech</strong><br><small>${feature.properties.length_km.toLocaleString('fr-FR')} km</small>`
                         )
                     }).addTo(routeLayer);
-                    showMessage('Carte prête. L’axe Kénitra–Marrakech est mis en évidence.');
                 })
                 .catch((error) => {
                     showMessage(`Impossible de charger le réseau ferroviaire fourni : ${error.message}`, true);
