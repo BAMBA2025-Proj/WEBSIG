@@ -1,0 +1,19 @@
+{
+  "name": "Collecte terrain ferroviaire Kénitra–Marrakech",
+  "short_name": "Collecte rail",
+  "description": "Relevés terrain hors ligne pour le corridor ferroviaire Kénitra–Marrakech.",
+  "lang": "fr",
+  "start_url": "./carte-presentation.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#e9edf2",
+  "theme_color": "#17344d",
+  "icons": [
+    {
+      "src": "./assets/logo-projet.jpg",
+      "sizes": "249x189",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}

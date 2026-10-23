@@ -4,9 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#17344d">
+    <link rel="manifest" href="manifest-collecte.webmanifest">
     <title>Réseau ferroviaire · Kénitra – Marrakech</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <link rel="stylesheet" href="assets/leaflet/leaflet.css">
     <style>
         :root {
             font-family: "Segoe UI", Arial, sans-serif;
@@ -49,6 +49,20 @@
         .data-disclosure { margin: 12px 0; border: 1px solid #e1e7ee; border-radius: 7px; background: #fff; }
         .data-disclosure summary { padding: 9px 10px; color: #435267; font-size: 11px; font-weight: 700; cursor: pointer; }
         .data-disclosure p { margin: 0; padding: 0 10px 10px; color: #64748b; font-size: 10px; line-height: 1.5; }
+        .tool-disclosure { margin: 9px 0; border: 1px solid #dce4eb; border-radius: 8px; background: #fff; }
+        .tool-disclosure > summary {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            min-height: 42px; padding: 10px 12px; color: #17344d; font-size: 13px; font-weight: 750; cursor: pointer; list-style: none;
+        }
+        .tool-disclosure > summary::-webkit-details-marker { display: none; }
+        .tool-disclosure > summary::after { content: "+"; color: #087e8b; font-size: 18px; line-height: 1; }
+        .tool-disclosure[open] > summary::after { content: "−"; }
+        .tool-disclosure > summary:focus-visible { outline: 3px solid #5a94dc; outline-offset: -3px; border-radius: 8px; }
+        .tool-disclosure[open] > summary { border-bottom: 1px solid #e7edf2; }
+        .tool-disclosure > :not(summary) { margin-right: 12px; margin-left: 12px; }
+        .tool-disclosure > :last-child { margin-bottom: 12px; }
+        .tool-disclosure > .button-row { margin-top: 8px; }
+        .tool-disclosure > .intro { margin-top: 10px; }
         .field { display: grid; gap: 5px; margin: 9px 0; }
         .field label, .layer-option { font-size: 12px; font-weight: 650; }
         input[type="text"], input[type="search"], select, textarea {
@@ -126,6 +140,19 @@
         .poi-marker { display: flex; width: 29px; height: 29px; align-items: center; justify-content: center; border: 2px solid #fff; border-radius: 50%; color: #fff; box-shadow: 0 2px 8px #17212e35; font-size: 14px; line-height: 1; }
         .poi-option { padding: 3px 6px; border: 1px solid #e1e7ee; border-radius: 5px; background: #fff; font-size: 11px; }
         .poi-option input { accent-color: #087e8b; }
+        .collection-status { margin: 8px 0; padding: 8px 10px; border-radius: 7px; background: #eef2f6; color: #435267; font-size: 11px; line-height: 1.45; }
+        .collection-status.online { background: #eaf6ef; color: #1c6743; }
+        .collection-status.offline { background: #fff3df; color: #79510e; }
+        .coordinate-value { display: block; color: #64748b; font-size: 10px; overflow-wrap: anywhere; }
+        .observation-form { padding: 11px; border: 1px solid #dce4eb; border-radius: 8px; background: #f9fbfc; }
+        .observation-form .field { margin: 8px 0; }
+        .observation-form label { font-size: 11px; font-weight: 700; }
+        .observation-form input, .observation-form select, .observation-form textarea { min-height: 36px; }
+        .observation-photo { width: 100%; }
+        .observation-photo-preview { display: block; max-width: 100%; max-height: 180px; margin-top: 7px; border-radius: 6px; object-fit: contain; }
+        .observation-item { align-items: flex-start; }
+        .observation-item .work-title { cursor: pointer; }
+        .offline-help { margin: 8px 0; color: #64748b; font-size: 10px; line-height: 1.45; }
         @media (max-width: 650px) {
             .topbar { top: 8px; right: 8px; left: 8px; min-height: 68px; gap: 8px; padding: 7px 9px; }
             .brand { gap: 8px; }
@@ -181,8 +208,8 @@
     </header>
 
     <aside id="tools-panel" class="panel" aria-label="Outils cartographiques">
-        <section>
-            <h2>Rechercher une gare</h2>
+        <details class="tool-disclosure">
+            <summary>Rechercher une gare</summary>
             <div class="field">
                 <label for="station-search">Nom de la gare</label>
                 <input id="station-search" type="search" list="station-list" placeholder="Ex. Rabat Agdal" autocomplete="off">
@@ -192,19 +219,22 @@
                 <button id="search-button" class="primary" type="button">Centrer sur la gare</button>
                 <button id="clear-search" type="button">Effacer</button>
             </div>
-        </section>
-
-        <div class="notice">
-            <strong>Carte de suivi du corridor ferroviaire.</strong>
-            Consulte les gares, les interventions et les prévisions du projet.
-        </div>
-        <details class="data-disclosure">
-            <summary>Sources et limites des données</summary>
-            <p>Les voies sont issues du GeoPackage OpenStreetMap fourni (instantané du 30/10/2025, licence ODbL 1.0), avec fond cartographique Esri. Elles ne constituent pas un inventaire certifié ONCF/RFN. L’axe Kénitra–Marrakech affiché est indicatif et calculé à partir de ces voies. Le tracé exact et les états d’exploitation restent à valider par le projet.</p>
         </details>
 
-        <section>
-            <h3>Couches visibles</h3>
+        <details class="tool-disclosure">
+            <summary>Informations sur la carte</summary>
+            <div class="notice">
+                <strong>Carte de suivi du corridor ferroviaire.</strong>
+                Consulte les gares, les interventions et les prévisions du projet.
+            </div>
+            <details class="data-disclosure">
+                <summary>Sources et limites des données</summary>
+                <p>Les voies sont issues du GeoPackage OpenStreetMap fourni (instantané du 30/10/2025, licence ODbL 1.0), avec fond cartographique Esri. Elles ne constituent pas un inventaire certifié ONCF/RFN. L’axe Kénitra–Marrakech affiché est indicatif et calculé à partir de ces voies. Le tracé exact et les états d’exploitation restent à valider par le projet.</p>
+            </details>
+        </details>
+
+        <details class="tool-disclosure">
+            <summary>Couches visibles</summary>
             <div class="layer-list">
                 <label class="layer-option"><input id="show-stations" type="checkbox" checked> Gares repères</label>
                 <label class="layer-option"><input id="show-route" type="checkbox" checked><span class="swatch line-route"></span> Axe Kénitra–Marrakech</label>
@@ -216,10 +246,10 @@
                 <label class="layer-option"><input class="show-status" data-status="previsionnel" type="checkbox" checked><span class="swatch line-planned"></span> Prévisionnel</label>
                 <label class="layer-option"><input class="show-status" data-status="termine" type="checkbox" checked><span class="swatch line-complete"></span> Réalisé / modifié</label>
             </div>
-        </section>
+        </details>
 
-        <section>
-            <h3>Repères d’infrastructure</h3>
+        <details class="tool-disclosure">
+            <summary>Repères d’infrastructure</summary>
             <p class="intro">Ajoute des repères ponctuels pour les équipements observés. Ils restent distincts des voies de référence.</p>
             <div class="field">
                 <label for="poi-type">Type de repère</label>
@@ -236,10 +266,89 @@
                 <label class="poi-option"><input id="show-poi" type="checkbox" checked> Afficher les repères</label>
             </div>
             <div id="poi-list" class="work-list"><p class="intro">Aucun repère ajouté.</p></div>
-        </section>
+        </details>
 
-        <section>
-            <h3>Mesurer une distance</h3>
+        <details class="tool-disclosure">
+            <summary>Formulaire de collecte</summary>
+            <p class="intro">Crée des constats géolocalisés avec photos. Les relevés sont enregistrés sur cet appareil, même hors connexion.</p>
+            <div id="collection-connectivity" class="collection-status" role="status" aria-live="polite">Vérification du mode hors ligne…</div>
+            <form id="observation-form" class="observation-form">
+                <div class="field">
+                    <label for="observation-uuid">Identifiant UUID</label>
+                    <input id="observation-uuid" type="text" readonly aria-describedby="uuid-help">
+                    <small id="uuid-help" class="offline-help">Un UUID indépendant est généré pour chaque constat.</small>
+                </div>
+                <div class="field">
+                    <label for="observation-date">Date du relevé *</label>
+                    <input id="observation-date" type="datetime-local" required>
+                </div>
+                <div class="field">
+                    <label for="observation-agent">Identifiant de l’agent *</label>
+                    <input id="observation-agent" type="text" maxlength="80" required autocomplete="off" placeholder="Ex. AG-014">
+                </div>
+                <div class="field">
+                    <label for="observation-type">Type d’objet *</label>
+                    <select id="observation-type" required>
+                        <option value="voie">Voie</option>
+                        <option value="signalisation">Signalisation</option>
+                        <option value="passage-niveau">Passage à niveau</option>
+                        <option value="ouvrage">Ouvrage d’art</option>
+                        <option value="electrification">Électrification</option>
+                        <option value="autre">Autre équipement</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="observation-condition">État *</label>
+                    <select id="observation-condition" required>
+                        <option value="a-verifier">À vérifier</option>
+                        <option value="bon">Bon</option>
+                        <option value="degrade">Dégradé</option>
+                        <option value="endommage">Endommagé</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="observation-description">Description *</label>
+                    <textarea id="observation-description" maxlength="2000" required placeholder="Décris le constat, le repère ou l’action à prévoir"></textarea>
+                </div>
+                <div class="field">
+                    <label for="observation-photo">Photo (facultative)</label>
+                    <input id="observation-photo" class="observation-photo" type="file" accept="image/*" capture="environment">
+                    <img id="observation-photo-preview" class="observation-photo-preview" alt="Aperçu de la photo à joindre" hidden>
+                </div>
+                <div class="field">
+                    <label>Position GPS du constat *</label>
+                    <output id="observation-coordinate" class="coordinate-value">Position non définie</output>
+                    <div class="button-row">
+                        <button id="observation-gps" type="button">Capturer ma position GPS</button>
+                        <button id="observation-map-location" type="button">Placer sur la carte</button>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="observation-status">Statut de validation</label>
+                    <select id="observation-status">
+                        <option value="a-verifier">À vérifier</option>
+                        <option value="valide">Validé</option>
+                        <option value="rejete">Rejeté</option>
+                    </select>
+                </div>
+                <div class="button-row">
+                    <button class="primary" type="submit">Enregistrer le relevé</button>
+                    <button id="observation-reset" type="reset">Nouveau relevé</button>
+                    <label class="poi-option"><input id="show-observations" type="checkbox" checked> Afficher les relevés</label>
+                </div>
+            </form>
+            <div class="button-row">
+                <button id="export-observations" type="button">Exporter les relevés GeoJSON</button>
+                <label class="file-button">Importer des relevés
+                    <input id="import-observations" type="file" accept=".geojson,.json,application/geo+json,application/json">
+                </label>
+            </div>
+            <p class="offline-help">Ouvre cette page une première fois avec une connexion et attends « Mode hors ligne prêt » avant de l’installer sur l’écran d’accueil. La carte de fond nécessite une connexion. Les constats et les photos sont conservés localement : exporte le GeoJSON puis importe-le sur l’appareil ou le poste destinataire. Cette carte ne synchronise pas automatiquement plusieurs téléphones.</p>
+            <div id="observation-list" class="work-list"><p class="intro">Aucun relevé enregistré.</p></div>
+        </details>
+
+        <details class="tool-disclosure">
+            <summary>Mesurer une distance</summary>
             <p class="intro">Clique sur « Démarrer », puis sur au moins deux points de la carte. La distance suit les clics, pas le tracé exact des voies.</p>
             <div class="button-row">
                 <button id="measure-start" type="button">Démarrer la mesure</button>
@@ -247,10 +356,10 @@
                 <button id="measure-clear" type="button">Effacer</button>
             </div>
             <output id="measure-result" class="measurement" aria-live="polite" hidden></output>
-        </section>
+        </details>
 
-        <section>
-            <h3>Ajouter un événement réseau</h3>
+        <details class="tool-disclosure">
+            <summary>Ajouter un événement réseau</summary>
             <p class="intro">Dessine un linéaire, une zone ou place un point sur la carte. Les annotations sont locales et à valider avant diffusion.</p>
             <div class="field">
                 <label for="work-title">Intitulé</label>
@@ -280,10 +389,10 @@
                 <button id="save-drawing" class="primary" type="button" disabled>Enregistrer le tracé</button>
                 <button id="cancel-drawing" type="button">Annuler</button>
             </div>
-        </section>
+        </details>
 
-        <section>
-            <h3>Annotations de cette carte</h3>
+        <details class="tool-disclosure">
+            <summary>Annotations de cette carte</summary>
             <div id="work-list" class="work-list"><p class="intro">Aucune annotation enregistrée.</p></div>
             <div class="button-row">
                 <button id="export-data" type="button">Exporter GeoJSON</button>
@@ -292,17 +401,18 @@
                 </label>
             </div>
             <p class="attribution-note">Les annotations sont conservées séparément pour cette carte dans ce navigateur ; exporte-les en GeoJSON pour les partager. Les détails sur les données cartographiques sont disponibles dans « Sources et limites des données ».</p>
-        </section>
+        </details>
         <p id="app-message" class="message" role="status" aria-live="polite">Chargement de la carte…</p>
     </aside>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="assets/leaflet/leaflet.js"></script>
     <script>
         (() => {
             const message = document.getElementById('app-message');
             const storageKey = 'websig-kenitra-marrakech-annotations-presentation-v1';
             const poiStorageKey = 'websig-kenitra-marrakech-poi-presentation-v1';
+            const observationDatabaseName = 'websig-field-observations-v1';
+            const observationStoreName = 'observations';
             const poiTypes = {
                 'passage-niveau': { label: 'Passage à niveau', symbol: '⌁', color: '#bf5a36' },
                 signalisation: { label: 'Signalisation', symbol: '⚑', color: '#c99a23' },
@@ -398,6 +508,8 @@
             const draftLayer = L.featureGroup().addTo(map);
             const poiLayer = L.featureGroup().addTo(map);
             const poiDraftLayer = L.featureGroup().addTo(map);
+            const observationLayer = L.featureGroup().addTo(map);
+            const observationDraftLayer = L.featureGroup().addTo(map);
             const workLayers = {};
             Object.keys(statusLabels).forEach((status) => {
                 workLayers[status] = L.featureGroup().addTo(map);
@@ -499,6 +611,10 @@
             let annotations = [];
             let annotationLoadError = false;
             let pointsOfInterest = [];
+            let observations = [];
+            let observationDatabase;
+            let observationPosition = null;
+            let observationPhotoPreviewUrl = null;
             let mode = null;
             let drawingPoints = [];
             let measurePoints = [];
@@ -637,6 +753,214 @@
                 });
             }
 
+            function openObservationDatabase() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(observationDatabaseName, 1);
+                    request.onupgradeneeded = () => {
+                        const database = request.result;
+                        if (!database.objectStoreNames.contains(observationStoreName)) {
+                            database.createObjectStore(observationStoreName, { keyPath: 'uuid' });
+                        }
+                    };
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error || new Error('IndexedDB indisponible.'));
+                });
+            }
+
+            function observationStoreRequest(mode, operation) {
+                return new Promise((resolve, reject) => {
+                    const transaction = observationDatabase.transaction(observationStoreName, mode);
+                    const request = operation(transaction.objectStore(observationStoreName));
+                    let result;
+                    request.onsuccess = () => {
+                        result = request.result;
+                    };
+                    request.onerror = () => reject(request.error || new Error('Échec de la base locale.'));
+                    transaction.oncomplete = () => resolve(result);
+                    transaction.onerror = () => reject(transaction.error || new Error('Échec de la transaction locale.'));
+                    transaction.onabort = () => reject(transaction.error || new Error('Transaction annulée.'));
+                });
+            }
+
+            function newObservationId() {
+                document.getElementById('observation-uuid').value = crypto.randomUUID();
+            }
+
+            function setObservationDateNow() {
+                const localDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60000);
+                document.getElementById('observation-date').value = localDate.toISOString().slice(0, 16);
+            }
+
+            function updateCollectionConnectivity() {
+                const status = document.getElementById('collection-connectivity');
+                const offline = !navigator.onLine;
+                status.classList.toggle('offline', offline);
+                status.classList.toggle('online', !offline);
+                status.textContent = offline
+                    ? 'Hors connexion : les relevés restent enregistrés sur cet appareil.'
+                    : status.dataset.appReady === 'true'
+                        ? 'Mode hors ligne prêt : formulaire, photos et données sont disponibles sur cet appareil.'
+                        : 'En ligne : les relevés restent locaux jusqu’à leur export.';
+            }
+
+            function observationColor(status) {
+                return status === 'valide' ? '#18855b' : status === 'rejete' ? '#697c91' : '#d28a18';
+            }
+
+            function observationToFeature(observation, photoData = null) {
+                const properties = {
+                    uuid: observation.uuid,
+                    date_releve: observation.date_releve,
+                    agent_id: observation.agent_id,
+                    type_objet: observation.type_objet,
+                    etat: observation.etat,
+                    description: observation.description,
+                    statut: observation.statut
+                };
+                if (photoData) properties.photo = photoData;
+                return {
+                    type: 'Feature',
+                    geometry: { type: 'Point', coordinates: observation.coordinates },
+                    properties
+                };
+            }
+
+            function observationFeatureValid(feature) {
+                if (!feature || feature.type !== 'Feature' || !feature.geometry || !feature.properties) return false;
+                const props = feature && feature.properties;
+                const position = feature && feature.geometry && feature.geometry.coordinates;
+                return feature.geometry.type === 'Point'
+                    && Array.isArray(position)
+                    && position.length >= 2
+                    && Number.isFinite(position[0])
+                    && Number.isFinite(position[1])
+                    && Math.abs(position[0]) <= 180
+                    && Math.abs(position[1]) <= 90
+                    && props
+                    && typeof props.uuid === 'string'
+                    && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(props.uuid)
+                    && typeof props.date_releve === 'string'
+                    && !Number.isNaN(Date.parse(props.date_releve))
+                    && typeof props.agent_id === 'string'
+                    && props.agent_id.trim().length > 0
+                    && typeof props.type_objet === 'string'
+                    && ['voie', 'signalisation', 'passage-niveau', 'ouvrage', 'electrification', 'autre'].includes(props.type_objet)
+                    && typeof props.etat === 'string'
+                    && ['a-verifier', 'bon', 'degrade', 'endommage'].includes(props.etat)
+                    && typeof props.description === 'string'
+                    && props.description.trim().length > 0
+                    && typeof props.statut === 'string'
+                    && ['a-verifier', 'valide', 'rejete'].includes(props.statut)
+                    && (props.photo === undefined || typeof props.photo === 'string');
+            }
+
+            function renderObservations() {
+                observationLayer.clearLayers();
+                const list = document.getElementById('observation-list');
+                list.replaceChildren();
+                if (!observations.length) {
+                    const empty = document.createElement('p');
+                    empty.className = 'intro';
+                    empty.textContent = 'Aucun relevé enregistré.';
+                    list.appendChild(empty);
+                    return;
+                }
+                observations
+                    .slice()
+                    .sort((a, b) => b.date_releve.localeCompare(a.date_releve))
+                    .forEach((observation) => {
+                        const type = document.getElementById('observation-type').querySelector(`option[value="${observation.type_objet}"]`)?.textContent || observation.type_objet;
+                        const condition = document.getElementById('observation-condition').querySelector(`option[value="${observation.etat}"]`)?.textContent || observation.etat;
+                        const validation = document.getElementById('observation-status').querySelector(`option[value="${observation.statut}"]`)?.textContent || observation.statut;
+                        const color = observationColor(observation.statut);
+                        const marker = L.marker([observation.coordinates[1], observation.coordinates[0]], {
+                            icon: mapPinIcon(color, 'event-marker', true),
+                            title: `${type} — ${observation.agent_id}`,
+                            alt: `Relevé ${type}, statut ${validation}`,
+                            keyboard: true,
+                            zIndexOffset: 520
+                        });
+                        const popup = `<strong>${escapeHtml(type)}</strong><br>${escapeHtml(condition)} · ${escapeHtml(validation)}<br>${escapeHtml(observation.description)}<br><small>Agent : ${escapeHtml(observation.agent_id)} · UUID : ${escapeHtml(observation.uuid)}</small>${observation.photo_blob ? '<br><small>Photo jointe au relevé</small>' : ''}`;
+                        marker.bindPopup(popup);
+                        if (document.getElementById('show-observations').checked) marker.addTo(observationLayer);
+
+                        const row = document.createElement('div');
+                        row.className = 'work-item observation-item';
+                        const dot = document.createElement('span');
+                        dot.className = 'legend-dot';
+                        dot.style.backgroundColor = color;
+                        const title = document.createElement('span');
+                        title.className = 'work-title';
+                        title.textContent = observation.description;
+                        const sub = document.createElement('small');
+                        sub.textContent = `${type} · ${validation} · ${new Date(observation.date_releve).toLocaleString('fr-FR')}`;
+                        title.appendChild(sub);
+                        title.addEventListener('click', () => {
+                            map.setView([observation.coordinates[1], observation.coordinates[0]], 15);
+                            marker.openPopup();
+                        });
+                        const remove = document.createElement('button');
+                        remove.type = 'button';
+                        remove.textContent = 'Supprimer';
+                        remove.setAttribute('aria-label', `Supprimer le relevé ${observation.uuid}`);
+                        remove.addEventListener('click', async () => {
+                            if (!window.confirm('Supprimer ce relevé et sa photo de cet appareil ?')) return;
+                            try {
+                                await observationStoreRequest('readwrite', (store) => store.delete(observation.uuid));
+                                observations = observations.filter((item) => item.uuid !== observation.uuid);
+                                renderObservations();
+                                showMessage('Relevé supprimé de cet appareil.');
+                            } catch (error) {
+                                showMessage(`Impossible de supprimer ce relevé : ${error.message}`, true);
+                            }
+                        });
+                        row.append(dot, title, remove);
+                        list.appendChild(row);
+                    });
+            }
+
+            function setObservationPosition(latitude, longitude, accuracy = null) {
+                observationPosition = { latitude, longitude };
+                const accuracyText = Number.isFinite(accuracy) ? ` (précision ±${Math.round(accuracy)} m)` : '';
+                document.getElementById('observation-coordinate').textContent =
+                    `${latitude.toFixed(6)}, ${longitude.toFixed(6)}${accuracyText}`;
+                observationDraftLayer.clearLayers();
+                L.marker([latitude, longitude], {
+                    icon: mapPinIcon('#0b7586', 'event-marker', true),
+                    interactive: false
+                }).addTo(observationDraftLayer);
+            }
+
+            function dataUrlToBlob(dataUrl) {
+                const match = /^data:(image\/[a-z0-9.+-]+);base64,([a-z0-9+/=]+)$/i.exec(dataUrl);
+                if (!match) throw new Error('La photo GeoJSON doit être une image encodée en base64.');
+                const binary = atob(match[2]);
+                const bytes = new Uint8Array(binary.length);
+                for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
+                return new Blob([bytes], { type: match[1] });
+            }
+
+            function blobToDataUrl(blob) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = () => reject(reader.error || new Error('Impossible de lire la photo.'));
+                    reader.readAsDataURL(blob);
+                });
+            }
+
+            function downloadObservations(collection) {
+                const blob = new Blob([JSON.stringify(collection, null, 2)], { type: 'application/geo+json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'observations-kenitra-marrakech.geojson';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }
+
             function renderAnnotations() {
                 Object.values(workLayers).forEach((layer) => layer.clearLayers());
                 annotations.forEach((feature, index) => {
@@ -752,6 +1076,7 @@
                 document.getElementById('draw-area').classList.remove('active');
                 document.getElementById('add-point').classList.remove('active');
                 document.getElementById('add-poi').classList.remove('active');
+                document.getElementById('observation-map-location').classList.remove('active');
                 document.getElementById('measure-start').classList.remove('active');
                 map.getContainer().style.cursor = '';
                 document.getElementById('measure-finish').disabled = true;
@@ -831,6 +1156,15 @@
                         saveFeature(feature);
                         stopMode();
                     }
+                    return;
+                }
+                if (mode === 'observation') {
+                    setObservationPosition(event.latlng.lat, event.latlng.lng);
+                    mode = null;
+                    observationDraftLayer.clearLayers();
+                    document.getElementById('observation-map-location').classList.remove('active');
+                    map.getContainer().style.cursor = '';
+                    showMessage('Position du relevé définie sur la carte.');
                     return;
                 }
                 if (mode === 'poi') {
@@ -947,7 +1281,213 @@
                 showMessage('Clique à l’emplacement de l’équipement pour ajouter un repère.');
             });
             document.getElementById('show-poi').addEventListener('change', renderPointsOfInterest);
+            document.getElementById('show-observations').addEventListener('change', renderObservations);
             statusInputs.forEach((input) => input.addEventListener('change', renderAnnotations));
+
+            document.getElementById('observation-agent').value = localStorage.getItem('websig-field-agent-id') || '';
+            newObservationId();
+            setObservationDateNow();
+            updateCollectionConnectivity();
+            window.addEventListener('online', updateCollectionConnectivity);
+            window.addEventListener('offline', updateCollectionConnectivity);
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw-collecte.js')
+                    .then(() => navigator.serviceWorker.ready)
+                    .then(() => {
+                        document.getElementById('collection-connectivity').dataset.appReady = 'true';
+                        updateCollectionConnectivity();
+                    })
+                    .catch((error) => {
+                        const status = document.getElementById('collection-connectivity');
+                        status.classList.add('offline');
+                        status.textContent = `Application hors ligne non préparée : ${error.message}`;
+                    });
+            } else {
+                const status = document.getElementById('collection-connectivity');
+                status.classList.add('offline');
+                status.textContent = 'Ce navigateur ne prend pas en charge le mode application hors ligne.';
+            }
+
+            document.getElementById('observation-gps').addEventListener('click', () => {
+                if (!navigator.geolocation) {
+                    showMessage('La géolocalisation n’est pas disponible sur cet appareil.', true);
+                    return;
+                }
+                showMessage('Recherche de la position GPS…');
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        setObservationPosition(position.coords.latitude, position.coords.longitude, position.coords.accuracy);
+                        map.setView([position.coords.latitude, position.coords.longitude], 16);
+                        showMessage('Position GPS capturée.');
+                    },
+                    (error) => {
+                        showMessage(`Position GPS indisponible : ${error.message}`, true);
+                    },
+                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+                );
+            });
+
+            document.getElementById('observation-map-location').addEventListener('click', () => {
+                stopMode();
+                mode = 'observation';
+                document.getElementById('observation-map-location').classList.add('active');
+                map.getContainer().style.cursor = 'crosshair';
+                showMessage('Clique sur la carte à l’emplacement du constat.');
+            });
+
+            document.getElementById('observation-photo').addEventListener('change', (event) => {
+                const file = event.currentTarget.files[0];
+                const preview = document.getElementById('observation-photo-preview');
+                if (observationPhotoPreviewUrl) URL.revokeObjectURL(observationPhotoPreviewUrl);
+                observationPhotoPreviewUrl = null;
+                preview.hidden = true;
+                preview.removeAttribute('src');
+                if (!file) return;
+                if (!file.type.startsWith('image/')) {
+                    event.currentTarget.value = '';
+                    showMessage('Choisis un fichier image pour la photo.', true);
+                    return;
+                }
+                if (file.size > 12 * 1024 * 1024) {
+                    event.currentTarget.value = '';
+                    showMessage('La photo dépasse la limite de 12 Mo.', true);
+                    return;
+                }
+                observationPhotoPreviewUrl = URL.createObjectURL(file);
+                preview.src = observationPhotoPreviewUrl;
+                preview.hidden = false;
+            });
+
+            document.getElementById('observation-form').addEventListener('reset', () => {
+                window.setTimeout(() => {
+                    observationPosition = null;
+                    observationDraftLayer.clearLayers();
+                    document.getElementById('observation-coordinate').textContent = 'Position non définie';
+                    const preview = document.getElementById('observation-photo-preview');
+                    if (observationPhotoPreviewUrl) URL.revokeObjectURL(observationPhotoPreviewUrl);
+                    observationPhotoPreviewUrl = null;
+                    preview.hidden = true;
+                    preview.removeAttribute('src');
+                    newObservationId();
+                    setObservationDateNow();
+                }, 0);
+            });
+
+            document.getElementById('observation-form').addEventListener('submit', async (event) => {
+                event.preventDefault();
+                if (!observationPosition) {
+                    showMessage('Capture la position GPS ou place le relevé sur la carte.', true);
+                    return;
+                }
+                const photoFile = document.getElementById('observation-photo').files[0] || null;
+                const observation = {
+                    uuid: document.getElementById('observation-uuid').value,
+                    date_releve: new Date(document.getElementById('observation-date').value).toISOString(),
+                    agent_id: document.getElementById('observation-agent').value.trim(),
+                    type_objet: document.getElementById('observation-type').value,
+                    etat: document.getElementById('observation-condition').value,
+                    description: document.getElementById('observation-description').value.trim(),
+                    statut: document.getElementById('observation-status').value,
+                    coordinates: [observationPosition.longitude, observationPosition.latitude],
+                    photo_blob: photoFile,
+                    createdAt: new Date().toISOString()
+                };
+                try {
+                    if (!observationDatabase) observationDatabase = await openObservationDatabase();
+                    await observationStoreRequest('readwrite', (store) => store.put(observation));
+                    observations = await observationStoreRequest('readonly', (store) => store.getAll());
+                    let rememberAgentError = '';
+                    try {
+                        localStorage.setItem('websig-field-agent-id', observation.agent_id);
+                    } catch (error) {
+                        rememberAgentError = ` L’identifiant agent ne pourra pas être mémorisé : ${error.message}`;
+                    }
+                    renderObservations();
+                    document.getElementById('observation-form').reset();
+                    showMessage(`Relevé enregistré hors ligne : ${observation.uuid}. Exporte-le pour le transférer.${rememberAgentError}`, Boolean(rememberAgentError));
+                } catch (error) {
+                    showMessage(`Impossible d’enregistrer le relevé : ${error.message}`, true);
+                }
+            });
+
+            document.getElementById('export-observations').addEventListener('click', async () => {
+                try {
+                    if (!observationDatabase) observationDatabase = await openObservationDatabase();
+                    observations = await observationStoreRequest('readonly', (store) => store.getAll());
+                    const features = await Promise.all(observations.map(async (observation) => {
+                        const photoData = observation.photo_blob ? await blobToDataUrl(observation.photo_blob) : null;
+                        return observationToFeature(observation, photoData);
+                    }));
+                    downloadObservations({
+                        type: 'FeatureCollection',
+                        name: 'observations-terrain-kenitra-marrakech',
+                        features
+                    });
+                    showMessage(`${features.length} relevé${features.length === 1 ? '' : 's'} exporté${features.length === 1 ? '' : 's'} en GeoJSON.`);
+                } catch (error) {
+                    showMessage(`Export des relevés impossible : ${error.message}`, true);
+                }
+            });
+
+            document.getElementById('import-observations').addEventListener('change', async (event) => {
+                const input = event.currentTarget;
+                const file = input.files[0];
+                if (!file) return;
+                try {
+                    const parsed = JSON.parse(await file.text());
+                    const features = parsed.type === 'FeatureCollection' && Array.isArray(parsed.features)
+                        ? parsed.features
+                        : parsed.type === 'Feature' ? [parsed] : null;
+                    if (!features || !features.every(observationFeatureValid)) {
+                        throw new Error('Le GeoJSON ne contient pas les champs de relevé attendus ou des UUID/coordonnées valides.');
+                    }
+                    if (!observationDatabase) observationDatabase = await openObservationDatabase();
+                    const existing = new Set((await observationStoreRequest('readonly', (store) => store.getAll())).map((item) => item.uuid));
+                    let imported = 0;
+                    for (const feature of features) {
+                        if (existing.has(feature.properties.uuid)) continue;
+                        const props = feature.properties;
+                        const observation = {
+                            uuid: props.uuid,
+                            date_releve: new Date(props.date_releve).toISOString(),
+                            agent_id: props.agent_id.trim(),
+                            type_objet: props.type_objet,
+                            etat: props.etat,
+                            description: props.description.trim(),
+                            statut: props.statut,
+                            coordinates: feature.geometry.coordinates.slice(0, 2),
+                            photo_blob: props.photo ? dataUrlToBlob(props.photo) : null,
+                            createdAt: new Date().toISOString()
+                        };
+                        await observationStoreRequest('readwrite', (store) => store.add(observation));
+                        existing.add(observation.uuid);
+                        imported += 1;
+                    }
+                    observations = await observationStoreRequest('readonly', (store) => store.getAll());
+                    renderObservations();
+                    showMessage(`${imported} nouveau${imported === 1 ? '' : 'x'} relevé${imported === 1 ? '' : 's'} importé${imported === 1 ? '' : 's'} ; les UUID déjà présents ont été ignorés.`);
+                } catch (error) {
+                    showMessage(`Import des relevés impossible : ${error.message}`, true);
+                } finally {
+                    input.value = '';
+                }
+            });
+
+            openObservationDatabase()
+                .then((database) => {
+                    observationDatabase = database;
+                    return observationStoreRequest('readonly', (store) => store.getAll());
+                })
+                .then((savedObservations) => {
+                    observations = savedObservations;
+                    renderObservations();
+                })
+                .catch((error) => {
+                    showMessage(`Collecte locale indisponible : ${error.message}`, true);
+                    document.getElementById('collection-connectivity').classList.add('offline');
+                    document.getElementById('collection-connectivity').textContent =
+                        'La base de collecte locale ne peut pas être ouverte dans ce navigateur.';
+                });
 
             document.getElementById('measure-start').addEventListener('click', startMeasure);
             document.getElementById('measure-finish').addEventListener('click', () => {
