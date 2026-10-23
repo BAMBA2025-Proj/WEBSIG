@@ -1616,9 +1616,6 @@
             fitCorridorToViewport();
             window.setTimeout(() => map.invalidateSize(), 100);
             window.addEventListener('resize', () => map.invalidateSize());
-            if (!annotations.length && !annotationLoadError) {
-                showMessage('Carte prête. Les travaux et prévisions apparaîtront après leur saisie ou import GeoJSON.');
-            }
         })();
     </script>
 </body>
