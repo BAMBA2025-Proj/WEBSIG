@@ -34,6 +34,34 @@
         .tool-section[open] > summary::after { content: "−"; }
         .tool-section[open] > summary { border-bottom: 1px solid #edf1f4; }
         .tool-content { padding: 12px; }
+        .annotation-field { display: grid; gap: 5px; margin: 9px 0; }
+        .annotation-field label, .annotation-option { color: #29465a; font-size: 12px; font-weight: 650; }
+        .annotation-field input, .annotation-field select, .annotation-field textarea { width: 100%; min-height: 36px; padding: 8px 10px; border: 1px solid #c9d6df; border-radius: 7px; color: #18334a; background: #fbfdfe; font: inherit; font-size: 13px; }
+        .annotation-field textarea { min-height: 64px; resize: vertical; }
+        .annotation-intro { margin: 0 0 10px; color: #5c7182; font-size: 12px; line-height: 1.45; }
+        .annotation-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+        .annotation-actions button, .annotation-actions .file-button, .annotation-item button { border: 0; border-radius: 7px; padding: 9px 11px; color: #29465a; background: #edf2f5; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .annotation-actions button:hover, .annotation-actions .file-button:hover, .annotation-item button:hover { background: #dce7ed; }
+        .annotation-actions .primary { color: #fff; background: #087f88; }
+        .annotation-actions .primary:hover { background: #066b73; }
+        .annotation-actions button.active { box-shadow: 0 0 0 2px #087f8838; }
+        .annotation-actions button:disabled { cursor: not-allowed; opacity: .5; }
+        .annotation-actions [hidden] { display: none; }
+        .annotation-actions .file-button { position: relative; overflow: hidden; }
+        .annotation-actions input[type="file"] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+        .annotation-status-list { display: grid; gap: 8px; }
+        .annotation-option { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+        .annotation-option input { accent-color: #087f88; }
+        .annotation-swatch, .annotation-dot { display: inline-block; width: 18px; height: 5px; flex: 0 0 auto; border-radius: 3px; }
+        .annotation-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .annotation-message { margin: 9px 0 0; color: #52697b; font-size: 11px; line-height: 1.45; }
+        .annotation-message[data-state="error"] { color: #b42318; font-weight: 650; }
+        .annotation-list { display: grid; gap: 7px; margin-top: 10px; }
+        .annotation-item { display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid #e0e6eb; border-radius: 7px; }
+        .annotation-title { flex: 1; min-width: 0; color: #29465a; font-size: 12px; overflow-wrap: anywhere; cursor: pointer; }
+        .annotation-title small { display: block; margin-top: 2px; color: #64788b; font-size: 10px; }
+        .annotation-item button { padding: 6px 8px; }
+        .annotation-file-note { margin: 9px 0 0; color: #64788b; font-size: 10px; line-height: 1.45; }
         .search-row { display: flex; gap: 7px; }
         .search-input { width: 100%; min-width: 0; padding: 10px 11px; border: 1px solid #c9d6df; border-radius: 7px; color: #18334a; background: #fbfdfe; font-size: 13px; }
         .search-btn, .clear-btn, .filter-btn, .measure-clear { border: 0; border-radius: 7px; padding: 9px 11px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; transition: background .18s, color .18s; }
@@ -143,6 +171,61 @@
                             <div id="resultat" aria-live="polite">Cliquez sur deux points de la carte.</div>
                             <button class="measure-clear" id="clear-measure" type="button">Effacer</button>
                         </div>
+                    </div>
+                </details>
+                <details class="tool-section">
+                    <summary>Ajouter un événement réseau</summary>
+                    <div class="tool-content">
+                        <p class="annotation-intro">Ajoutez une annotation locale à la carte : trace, zone ou point. Les données restent dans ce navigateur tant qu’elles ne sont pas exportées.</p>
+                        <div class="annotation-field">
+                            <label for="annotation-title-input">Intitulé</label>
+                            <input id="annotation-title-input" type="text" maxlength="100" placeholder="Ex. Travaux de renouvellement">
+                        </div>
+                        <div class="annotation-field">
+                            <label for="annotation-status-input">Statut</label>
+                            <select id="annotation-status-input">
+                                <option value="active">En exploitation</option>
+                                <option value="works">Travaux en cours</option>
+                                <option value="neutralisee">Neutralisée</option>
+                                <option value="inactive">Fermée / interrompue</option>
+                                <option value="planned">Prévisionnelle</option>
+                                <option value="completed">Réalisée</option>
+                            </select>
+                        </div>
+                        <div class="annotation-field">
+                            <label for="annotation-note-input">Note ou référence (facultatif)</label>
+                            <textarea id="annotation-note-input" maxlength="500" placeholder="Description, date ou référence à confirmer"></textarea>
+                        </div>
+                        <div class="annotation-actions">
+                            <button id="draw-line" class="primary" type="button">Tracer une ligne</button>
+                            <button id="draw-area" type="button">Tracer une zone</button>
+                            <button id="add-point" type="button">Placer un point</button>
+                        </div>
+                        <div id="draw-controls" class="annotation-actions" hidden>
+                            <button id="undo-point" type="button">Annuler le dernier point</button>
+                            <button id="save-drawing" class="primary" type="button" disabled>Enregistrer le tracé</button>
+                            <button id="cancel-drawing" type="button">Annuler</button>
+                        </div>
+                        <p id="annotation-message" class="annotation-message" role="status" aria-live="polite">Les annotations ne modifient pas les données ferroviaires de référence.</p>
+                    </div>
+                </details>
+                <details class="tool-section">
+                    <summary>Annotations de cette carte</summary>
+                    <div class="tool-content">
+                        <div class="annotation-status-list" role="group" aria-label="Afficher ou masquer les annotations par statut">
+                            <label class="annotation-option"><input class="annotation-filter" data-annotation-status="active" type="checkbox" checked><span class="annotation-swatch" style="background:#18855b"></span>En exploitation</label>
+                            <label class="annotation-option"><input class="annotation-filter" data-annotation-status="works" type="checkbox" checked><span class="annotation-swatch" style="background:#d13b36"></span>Travaux en cours</label>
+                            <label class="annotation-option"><input class="annotation-filter" data-annotation-status="neutralisee" type="checkbox" checked><span class="annotation-swatch" style="background:#d28a18"></span>Neutralisée</label>
+                            <label class="annotation-option"><input class="annotation-filter" data-annotation-status="inactive" type="checkbox" checked><span class="annotation-swatch" style="background:#64748b"></span>Fermée / interrompue</label>
+                            <label class="annotation-option"><input class="annotation-filter" data-annotation-status="planned" type="checkbox" checked><span class="annotation-swatch" style="background:#8a55b5"></span>Prévisionnelle</label>
+                            <label class="annotation-option"><input class="annotation-filter" data-annotation-status="completed" type="checkbox" checked><span class="annotation-swatch" style="background:#168c96"></span>Réalisée</label>
+                        </div>
+                        <div id="annotation-list" class="annotation-list"><p class="annotation-intro">Aucune annotation enregistrée.</p></div>
+                        <div class="annotation-actions">
+                            <button id="export-annotations" type="button">Exporter GeoJSON</button>
+                            <label class="file-button">Importer GeoJSON<input id="import-annotations" type="file" accept=".geojson,.json,application/geo+json,application/json"></label>
+                        </div>
+                        <p class="annotation-file-note">Les annotations sont conservées dans ce navigateur. Exportez-les en GeoJSON pour les partager.</p>
                     </div>
                 </details>
             </aside>
@@ -401,6 +484,224 @@
 
         const coucheRFN = L.geoJSON(null, { style: styleLigne, onEachFeature: afficherPopup }).addTo(map);
         L.control.layers(null, { "Tronçons ferroviaires filtrés": coucheRFN }, { collapsed: true, position: "topright" }).addTo(map);
+        const statutsAnnotation = {
+            active: { label: "En exploitation", color: "#18855b" },
+            works: { label: "Travaux en cours", color: "#d13b36" },
+            neutralisee: { label: "Neutralisée", color: "#d28a18" },
+            inactive: { label: "Fermée / interrompue", color: "#64748b" },
+            planned: { label: "Prévisionnelle", color: "#8a55b5" },
+            completed: { label: "Réalisée", color: "#168c96" }
+        };
+        const cleAnnotations = "websig-france-annotations-v1";
+        const calqueAnnotations = L.featureGroup().addTo(map);
+        const calqueBrouillon = L.featureGroup().addTo(map);
+        const filtresAnnotations = Array.from(document.querySelectorAll(".annotation-filter"));
+        let annotations = [];
+        let modeAnnotation = null;
+        let pointsBrouillon = [];
+
+        function afficherMessageAnnotation(texte, erreur = false) {
+            const message = document.getElementById("annotation-message");
+            message.textContent = texte;
+            message.dataset.state = erreur ? "error" : "ok";
+        }
+
+        function validerFeatureAnnotation(feature) {
+            if (!feature || feature.type !== "Feature" || !feature.geometry
+                || !feature.properties || typeof feature.properties.title !== "string"
+                || !Object.prototype.hasOwnProperty.call(statutsAnnotation, feature.properties.status)) return false;
+            const positionValide = (position) => Array.isArray(position) && position.length >= 2
+                && Number.isFinite(position[0]) && Number.isFinite(position[1])
+                && Math.abs(position[0]) <= 180 && Math.abs(position[1]) <= 90;
+            const coords = feature.geometry.coordinates;
+            if (feature.geometry.type === "Point") return positionValide(coords);
+            if (feature.geometry.type === "LineString") {
+                return Array.isArray(coords) && coords.length >= 2 && coords.every(positionValide);
+            }
+            if (feature.geometry.type === "MultiLineString") {
+                return Array.isArray(coords) && coords.length > 0
+                    && coords.every((line) => Array.isArray(line) && line.length >= 2 && line.every(positionValide));
+            }
+            if (feature.geometry.type === "Polygon") {
+                return Array.isArray(coords) && coords.length > 0 && coords.every((ring) =>
+                    Array.isArray(ring) && ring.length >= 4 && ring.every(positionValide)
+                    && ring[0][0] === ring[ring.length - 1][0] && ring[0][1] === ring[ring.length - 1][1]);
+            }
+            return false;
+        }
+
+        function sauvegarderAnnotations() {
+            try {
+                localStorage.setItem(cleAnnotations, JSON.stringify(annotations));
+                return true;
+            } catch (erreur) {
+                afficherMessageAnnotation(`Enregistrement local impossible : ${erreur.message}`, true);
+                return false;
+            }
+        }
+
+        function creerPopupAnnotation(feature) {
+            const contenu = document.createElement("div");
+            const titre = document.createElement("strong");
+            titre.textContent = feature.properties.title;
+            contenu.appendChild(titre);
+            const statut = document.createElement("div");
+            statut.textContent = statutsAnnotation[feature.properties.status].label;
+            contenu.appendChild(statut);
+            if (feature.properties.note) {
+                const note = document.createElement("div");
+                note.textContent = feature.properties.note;
+                contenu.appendChild(note);
+            }
+            return contenu;
+        }
+
+        function zoomerSurAnnotation(feature) {
+            const calque = L.geoJSON(feature);
+            if (feature.geometry.type === "Point") {
+                const [longitude, latitude] = feature.geometry.coordinates;
+                map.setView([latitude, longitude], 13);
+            } else if (calque.getBounds().isValid()) {
+                map.fitBounds(calque.getBounds().pad(0.4), { maxZoom: 13 });
+            }
+        }
+
+        function afficherAnnotations() {
+            calqueAnnotations.clearLayers();
+            const visibles = new Set(filtresAnnotations.filter((input) => input.checked)
+                .map((input) => input.dataset.annotationStatus));
+            annotations.forEach((feature, index) => {
+                if (!visibles.has(feature.properties.status)) return;
+                const couleur = statutsAnnotation[feature.properties.status].color;
+                const calque = L.geoJSON(feature, {
+                    style: { color: couleur, weight: 5, opacity: 0.9, fillColor: couleur, fillOpacity: 0.2 },
+                    pointToLayer: (_feature, latlng) => L.circleMarker(latlng, {
+                        radius: 7, color: "#fff", weight: 2, fillColor: couleur, fillOpacity: 1
+                    }),
+                    onEachFeature: (geoFeature, couche) => couche.bindPopup(creerPopupAnnotation(geoFeature))
+                }).addTo(calqueAnnotations);
+                calque.eachLayer((enfant) => { enfant.annotationIndex = index; });
+            });
+            afficherListeAnnotations();
+        }
+
+        function afficherListeAnnotations() {
+            const liste = document.getElementById("annotation-list");
+            liste.replaceChildren();
+            if (!annotations.length) {
+                const vide = document.createElement("p");
+                vide.className = "annotation-intro";
+                vide.textContent = "Aucune annotation enregistrée.";
+                liste.appendChild(vide);
+                return;
+            }
+            annotations.forEach((feature, index) => {
+                const ligne = document.createElement("div");
+                ligne.className = "annotation-item";
+                const pastille = document.createElement("span");
+                pastille.className = "annotation-dot";
+                pastille.style.backgroundColor = statutsAnnotation[feature.properties.status].color;
+                const titre = document.createElement("span");
+                titre.className = "annotation-title";
+                titre.textContent = feature.properties.title;
+                const statut = document.createElement("small");
+                statut.textContent = statutsAnnotation[feature.properties.status].label;
+                titre.appendChild(statut);
+                titre.addEventListener("click", () => zoomerSurAnnotation(feature));
+                const supprimer = document.createElement("button");
+                supprimer.type = "button";
+                supprimer.textContent = "Supprimer";
+                supprimer.setAttribute("aria-label", `Supprimer ${feature.properties.title}`);
+                supprimer.addEventListener("click", () => {
+                    const [retiree] = annotations.splice(index, 1);
+                    if (sauvegarderAnnotations()) {
+                        afficherAnnotations();
+                        afficherMessageAnnotation("Annotation supprimée.");
+                    } else {
+                        annotations.splice(index, 0, retiree);
+                    }
+                });
+                ligne.append(pastille, titre, supprimer);
+                liste.appendChild(ligne);
+            });
+        }
+
+        function creerFeatureAnnotation(points, type) {
+            const titre = document.getElementById("annotation-title-input").value.trim();
+            if (!titre) {
+                afficherMessageAnnotation("Saisissez un intitulé avant d’enregistrer.", true);
+                document.getElementById("annotation-title-input").focus();
+                return null;
+            }
+            const coordonnees = points.map((point) => [point.lng, point.lat]);
+            const geometryCoordinates = type === "Point" ? coordonnees[0]
+                : type === "Polygon" ? [[...coordonnees, coordonnees[0]]]
+                    : coordonnees;
+            return {
+                type: "Feature",
+                properties: {
+                    title: titre,
+                    status: document.getElementById("annotation-status-input").value,
+                    note: document.getElementById("annotation-note-input").value.trim(),
+                    createdAt: new Date().toISOString()
+                },
+                geometry: { type, coordinates: geometryCoordinates }
+            };
+        }
+
+        function enregistrerAnnotation(feature) {
+            annotations.push(feature);
+            if (!sauvegarderAnnotations()) {
+                annotations.pop();
+                return false;
+            }
+            afficherAnnotations();
+            afficherMessageAnnotation(`Annotation « ${feature.properties.title} » enregistrée dans ce navigateur.`);
+            return true;
+        }
+
+        function arreterDessin() {
+            modeAnnotation = null;
+            pointsBrouillon = [];
+            calqueBrouillon.clearLayers();
+            document.getElementById("draw-controls").hidden = true;
+            ["draw-line", "draw-area", "add-point"].forEach((id) =>
+                document.getElementById(id).classList.remove("active"));
+            map.getContainer().style.cursor = "";
+        }
+
+        function demarrerDessin(mode) {
+            arreterDessin();
+            modeAnnotation = mode;
+            if (mode === "point") {
+                document.getElementById("add-point").classList.add("active");
+                afficherMessageAnnotation("Cliquez sur la carte à l’emplacement du point.");
+            } else {
+                document.getElementById("draw-controls").hidden = false;
+                document.getElementById(mode === "line" ? "draw-line" : "draw-area").classList.add("active");
+                document.getElementById("save-drawing").disabled = true;
+                afficherMessageAnnotation(mode === "line"
+                    ? "Cliquez sur au moins deux points de la carte, puis enregistrez le tracé."
+                    : "Cliquez sur au moins trois points de la carte, puis enregistrez la zone.");
+            }
+            map.getContainer().style.cursor = "crosshair";
+        }
+
+        function actualiserBrouillon() {
+            calqueBrouillon.clearLayers();
+            pointsBrouillon.forEach((point) => L.circleMarker(point, {
+                radius: 4, color: "#fff", weight: 2, fillColor: "#087f88", fillOpacity: 1
+            }).addTo(calqueBrouillon));
+            if ((modeAnnotation === "line" && pointsBrouillon.length >= 2)
+                || (modeAnnotation === "area" && pointsBrouillon.length >= 3)) {
+                const style = { color: "#087f88", weight: 4, dashArray: "7 5", fillColor: "#087f88", fillOpacity: 0.15 };
+                if (modeAnnotation === "area") L.polygon(pointsBrouillon, style).addTo(calqueBrouillon);
+                else L.polyline(pointsBrouillon, style).addTo(calqueBrouillon);
+            }
+            const seuil = modeAnnotation === "area" ? 3 : 2;
+            document.getElementById("save-drawing").disabled = pointsBrouillon.length < seuil;
+            afficherMessageAnnotation(`${pointsBrouillon.length} point${pointsBrouillon.length > 1 ? "s" : ""} dans le tracé.`);
+        }
 
         const boutonOutils = document.getElementById("toggle-tools");
         const workspace = document.getElementById("workspace");
@@ -499,6 +800,88 @@
             if (champRecherche.value.trim()) executerRecherche(false);
             else actualiserCarte(false);
         }));
+        document.getElementById("draw-line").addEventListener("click", () => demarrerDessin("line"));
+        document.getElementById("draw-area").addEventListener("click", () => demarrerDessin("area"));
+        document.getElementById("add-point").addEventListener("click", () => demarrerDessin("point"));
+        document.getElementById("undo-point").addEventListener("click", () => {
+            pointsBrouillon.pop();
+            actualiserBrouillon();
+        });
+        document.getElementById("cancel-drawing").addEventListener("click", () => {
+            arreterDessin();
+            afficherMessageAnnotation("Tracé annulé.");
+        });
+        document.getElementById("save-drawing").addEventListener("click", () => {
+            const type = modeAnnotation === "area" ? "Polygon" : "LineString";
+            const feature = creerFeatureAnnotation(pointsBrouillon, type);
+            if (feature && enregistrerAnnotation(feature)) arreterDessin();
+        });
+        document.getElementById("annotation-title-input").addEventListener("keydown", (event) => {
+            if (event.key === "Enter" && modeAnnotation === "point") {
+                event.preventDefault();
+                afficherMessageAnnotation("Cliquez sur la carte pour placer le point.");
+            }
+        });
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && modeAnnotation) {
+                arreterDessin();
+                afficherMessageAnnotation("Dessin annulé.");
+            }
+        });
+        filtresAnnotations.forEach((input) => input.addEventListener("change", afficherAnnotations));
+        document.getElementById("export-annotations").addEventListener("click", () => {
+            const collection = { type: "FeatureCollection", name: "annotations-reseau-ferroviaire-france", features: annotations };
+            const url = URL.createObjectURL(new Blob([JSON.stringify(collection, null, 2)], { type: "application/geo+json" }));
+            const lien = document.createElement("a");
+            lien.href = url;
+            lien.download = "annotations-reseau-ferroviaire-france.geojson";
+            document.body.appendChild(lien);
+            lien.click();
+            lien.remove();
+            window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+            afficherMessageAnnotation("Fichier GeoJSON exporté.");
+        });
+        document.getElementById("import-annotations").addEventListener("change", async (event) => {
+            const input = event.currentTarget;
+            const fichier = input.files[0];
+            if (!fichier) return;
+            try {
+                const contenu = JSON.parse(await fichier.text());
+                const features = contenu.type === "FeatureCollection" && Array.isArray(contenu.features)
+                    ? contenu.features : contenu.type === "Feature" ? [contenu] : null;
+                if (!features || !features.every(validerFeatureAnnotation)) {
+                    throw new Error("Le GeoJSON doit contenir des annotations valides (Point, LineString, MultiLineString ou Polygon) avec un intitulé et un statut reconnu.");
+                }
+                const anciennesAnnotations = annotations;
+                annotations = features;
+                if (!sauvegarderAnnotations()) {
+                    annotations = anciennesAnnotations;
+                    return;
+                }
+                afficherAnnotations();
+                afficherMessageAnnotation(`${features.length} annotation${features.length === 1 ? "" : "s"} GeoJSON importée${features.length === 1 ? "" : "s"}.`);
+            } catch (erreur) {
+                afficherMessageAnnotation(`Import GeoJSON impossible : ${erreur.message}`, true);
+            } finally {
+                input.value = "";
+            }
+        });
+
+        let erreurChargementAnnotations = false;
+        try {
+            const sauvegarde = localStorage.getItem(cleAnnotations);
+            if (sauvegarde !== null) {
+                const chargees = JSON.parse(sauvegarde);
+                if (!Array.isArray(chargees) || !chargees.every(validerFeatureAnnotation)) {
+                    throw new Error("Les annotations locales ne respectent pas le format attendu.");
+                }
+                annotations = chargees;
+            }
+        } catch (erreur) {
+            erreurChargementAnnotations = true;
+            afficherMessageAnnotation(`Annotations locales non chargées : ${erreur.message}`, true);
+        }
+        afficherAnnotations();
 
         map.fitBounds(L.geoJSON(monTraceFerroviaire).getBounds(), { padding: [24, 24] });
         actualiserCarte(false);
@@ -512,6 +895,16 @@
         }
         document.getElementById("clear-measure").addEventListener("click", nettoyerMesure);
         map.on("click", (event) => {
+            if (modeAnnotation === "point") {
+                const feature = creerFeatureAnnotation([event.latlng], "Point");
+                if (feature && enregistrerAnnotation(feature)) arreterDessin();
+                return;
+            }
+            if (modeAnnotation === "line" || modeAnnotation === "area") {
+                pointsBrouillon.push(event.latlng);
+                actualiserBrouillon();
+                return;
+            }
             const point = event.latlng;
             marqueursMesure.push(L.circleMarker(point, { color: "#e03a3e", radius: 6, fillColor: "#e03a3e", fillOpacity: 1 }).addTo(map));
             if (!premierPoint) {
@@ -526,6 +919,9 @@
             premierPoint = null;
         });
         map.on("dblclick", nettoyerMesure);
+        if (!annotations.length && !erreurChargementAnnotations) {
+            afficherMessageAnnotation("Les annotations ne modifient pas les données ferroviaires de référence.");
+        }
     </script>
 </body>
 </html>
