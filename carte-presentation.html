@@ -97,7 +97,31 @@
         .work-item button { min-height: 28px; padding: 4px 7px; }
         .file-button input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
         .attribution-note { margin: 12px 0 0; color: #64748b; font-size: 10px; line-height: 1.4; }
-        .leaflet-control-attribution { font-size: 10px !important; }
+        .leaflet-control-attribution {
+            padding: 5px 9px !important; border: 1px solid #dce2e9;
+            border-radius: 8px 0 0; background: rgba(255,255,255,.94) !important;
+            color: #526174; font-size: 10px !important; box-shadow: 0 2px 10px #17212e18;
+        }
+        .map-footer {
+            display: none; align-items: center; gap: 9px; padding: 8px 12px;
+            border: 1px solid #dce2e9; border-radius: 9px;
+            background: rgba(255,255,255,.95); color: #526174;
+            box-shadow: 0 3px 14px #17212e18; font-size: 10px; line-height: 1.25;
+        }
+        .map-footer--visible { display: flex; }
+        .map-footer-mark { width: 22px; height: 4px; flex: none; border-radius: 3px; background: #087e8b; }
+        .map-footer strong { display: block; color: #17344d; font-size: 10px; }
+        .map-footer span { display: block; margin-top: 2px; color: #64748b; }
+        .station-marker, .event-marker { border: 0; background: transparent; }
+        .map-pin {
+            display: flex; width: 23px; height: 29px; align-items: center; justify-content: center;
+            filter: drop-shadow(0 2px 2px #14243540);
+        }
+        .map-pin svg { display: block; width: 23px; height: 29px; overflow: visible; }
+        .map-pin--small { width: 20px; height: 25px; }
+        .map-pin--small svg { width: 20px; height: 25px; }
+        .station-pin { z-index: 600; }
+        .event-pin { z-index: 500; }
         @media (max-width: 650px) {
             .topbar { top: 8px; right: 8px; left: 8px; min-height: 68px; gap: 8px; padding: 7px 9px; }
             .brand { gap: 8px; }
@@ -114,20 +138,25 @@
                 max-width: none; max-height: 43vh; padding: 12px;
             }
             .panel h3 { margin-top: 11px; }
-            .leaflet-bottom { bottom: 44vh; }
+            .leaflet-bottom { bottom: 0; }
+            .leaflet-bottom.leaflet-right { transition: bottom .18s ease; }
+            .leaflet-bottom.leaflet-right { bottom: 66px; }
+            .tools-panel-open .leaflet-bottom { bottom: 44vh; }
             .leaflet-left { left: 8px; }
             .leaflet-top { top: 74px; }
         }
         @media (max-width: 400px) {
-            .source-badge { display: none; }
+            .header-tag { display: none; }
             .topbar p { display: none; }
+            .map-footer { gap: 6px; padding: 7px 8px; }
+            .map-footer span { display: none; }
         }
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
         }
     </style>
 </head>
-<body>
+<body class="tools-panel-open">
     <div id="map" aria-label="Carte interactive indicative du corridor ferroviaire Kénitra–Marrakech"></div>
     <header class="topbar">
         <div class="brand">
@@ -290,6 +319,20 @@
                 return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr').trim();
             }
 
+            function mapPinIcon(color, className, small = false) {
+                const size = small ? 20 : 23;
+                const height = small ? 25 : 29;
+                const iconClass = small ? 'map-pin map-pin--small' : 'map-pin';
+                const svg = `<svg viewBox="0 0 32 40" aria-hidden="true" focusable="false"><path d="M16 39S3 23.8 3 14a13 13 0 1 1 26 0c0 9.8-13 25-13 25z" fill="${color}" stroke="#fff" stroke-width="2"/><path d="M10 8h12a2 2 0 0 1 2 2v11H8V10a2 2 0 0 1 2-2zM8 14h16M12 21v3m8-3v3" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/><path d="M11 10h10v3H11z" fill="#fff"/></svg>`;
+                return L.divIcon({
+                    className,
+                    html: `<span class="${iconClass}">${svg}</span>`,
+                    iconSize: [size, height],
+                    iconAnchor: [size / 2, height - 1],
+                    popupAnchor: [0, -height + 5]
+                });
+            }
+
             if (!window.L) {
                 showMessage('La bibliothèque cartographique n’a pas pu être chargée. Vérifie la connexion Internet puis actualise la page.', true);
                 return;
@@ -297,6 +340,15 @@
 
             const map = L.map('map', { zoomControl: false, doubleClickZoom: true }).setView([33.08, -7.36], 7);
             L.control.zoom({ position: 'topright' }).addTo(map);
+            const footerControl = L.control({ position: 'bottomleft' });
+            footerControl.onAdd = function () {
+                const footer = L.DomUtil.create('div', 'map-footer');
+                footer.setAttribute('role', 'contentinfo');
+                footer.innerHTML = '<span class="map-footer-mark" aria-hidden="true"></span><div><strong>Corridor ferroviaire</strong><span>Kénitra — Rabat — Casablanca — Marrakech</span></div>';
+                L.DomEvent.disableClickPropagation(footer);
+                return footer;
+            };
+            footerControl.addTo(map);
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
                 maxZoom: 19,
                 attribution: 'Tiles &copy; <a href="https://www.esri.com/">Esri</a>, DeLorme, NAVTEQ'
@@ -317,6 +369,21 @@
                 workLayers[status] = L.featureGroup().addTo(map);
             });
             const corridorPoints = stations.map((station) => [station.lat, station.lon]);
+            function fitCorridorToViewport() {
+                const panel = document.getElementById('tools-panel');
+                const mobile = window.matchMedia('(max-width: 650px)').matches;
+                const paddingTopLeft = mobile
+                    ? (panel.hidden ? [18, 96] : [20, 80])
+                    : (panel.hidden ? [60, 125] : [390, 125]);
+                const paddingBottomRight = mobile
+                    ? (panel.hidden ? [18, 72] : [20, window.innerHeight * 0.46])
+                    : [55, 75];
+                map.fitBounds(corridorPoints, {
+                    paddingTopLeft,
+                    paddingBottomRight,
+                    maxZoom: panel.hidden ? 9 : 8
+                });
+            }
             const railwayStyle = (feature) => {
                 const name = normalize(feature.properties.name || '');
                 const isHighSpeed = name.includes('grande vitesse') || name.includes('lgv') || name.includes('al boraq');
@@ -381,8 +448,12 @@
 
             const markersByStation = new Map();
             stations.forEach((station) => {
-                const marker = L.circleMarker([station.lat, station.lon], {
-                    radius: 5, weight: 2, color: '#fff', fillColor: '#9f111b', fillOpacity: 1
+                const marker = L.marker([station.lat, station.lon], {
+                    icon: mapPinIcon('#1877b8', 'station-marker station-pin'),
+                    title: station.name,
+                    alt: `Gare : ${station.name}`,
+                    keyboard: true,
+                    zIndexOffset: 600
                 }).bindPopup(`<strong>${station.name}</strong><br><small>Repère géographique indicatif</small>`);
                 marker.addTo(stationLayer);
                 markersByStation.set(station.name, marker);
@@ -453,8 +524,12 @@
                 annotations.forEach((feature, index) => {
                     const layer = L.geoJSON(feature, {
                         style: featureStyle,
-                        pointToLayer: (geoFeature, latlng) => L.circleMarker(latlng, {
-                            radius: 8, color: '#fff', weight: 2, fillColor: statusColors[geoFeature.properties.status], fillOpacity: 1
+                        pointToLayer: (geoFeature, latlng) => L.marker(latlng, {
+                            icon: mapPinIcon(statusColors[geoFeature.properties.status], 'event-marker', true),
+                            title: geoFeature.properties.title,
+                            alt: `Intervention : ${geoFeature.properties.title}`,
+                            keyboard: true,
+                            zIndexOffset: 500
                         }),
                         onEachFeature: (geoFeature, layer) => {
                             const props = geoFeature.properties;
@@ -683,11 +758,16 @@
                 const panel = document.getElementById('tools-panel');
                 const hidden = !panel.hidden;
                 panel.hidden = hidden;
+                document.body.classList.toggle('tools-panel-open', !hidden);
+                document.querySelector('.map-footer').classList.toggle('map-footer--visible', hidden);
                 event.currentTarget.setAttribute('aria-expanded', String(!hidden));
                 const label = event.currentTarget.querySelector('.toggle-label');
                 label.textContent = hidden ? 'Afficher les outils' : 'Masquer les outils';
                 event.currentTarget.setAttribute('aria-label', label.textContent);
-                window.setTimeout(() => map.invalidateSize(), 100);
+                window.setTimeout(() => {
+                    map.invalidateSize();
+                    fitCorridorToViewport();
+                }, 180);
             });
             document.getElementById('show-stations').addEventListener('change', (event) => {
                 if (event.currentTarget.checked) stationLayer.addTo(map);
@@ -818,13 +898,7 @@
                 showMessage(`Annotations locales non chargées : ${error.message}`, true);
             }
             renderAnnotations();
-            const bounds = L.latLngBounds(corridorPoints);
-            const mobile = window.matchMedia('(max-width: 650px)').matches;
-            map.fitBounds(bounds, {
-                paddingTopLeft: mobile ? [20, 80] : [400, 120],
-                paddingBottomRight: mobile ? [20, window.innerHeight * 0.46] : [40, 35],
-                maxZoom: 8
-            });
+            fitCorridorToViewport();
             window.setTimeout(() => map.invalidateSize(), 100);
             window.addEventListener('resize', () => map.invalidateSize());
             if (!annotations.length && !annotationLoadError) {
