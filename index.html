@@ -1,239 +1,722 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Infrastructures Ferroviaires - Maroc</title>
-    
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#9f111b">
+    <title>Carte ferroviaire | Kénitra – Marrakech</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
     <style>
-        body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f2f5; }
-        #header { background: #b30000; color: white; padding: 15px 20px; font-weight: bold; font-size: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
-        #map-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: calc(100vh - 84px); padding: 20px; box-sizing: border-box; }
-        .canvas-carte { background: #ffffff; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); width: 100%; max-width: 950px; height: 100%; max-height: 650px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e1e4e8; position: relative; }
-        .barre-outils { background: #ffffff; border-bottom: 1px solid #edf2f7; padding: 12px 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; z-index: 20; }
-        .titre-outils { font-size: 14px; font-weight: bold; color: #4a5568; margin-right: 10px; }
-        .bouton-oncf { background: #b30000; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; transition: all 0.2s; box-shadow: 0 2px 4px rgba(179,0,0,0.2); }
-        .bouton-oncf:hover { background: #800000; transform: translateY(-1px); }
-        .bouton-oncf:focus-visible, .champ-recherche:focus-visible, .effacer-recherche:focus-visible { outline: 3px solid #3182ce; outline-offset: 2px; }
-        .filtre-reseau:not([aria-pressed="true"]) { background: #4a5568 !important; box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important; }
-        .recherche-gare { display: flex; align-items: center; gap: 6px; margin-left: auto; }
-        .champ-recherche { width: 190px; max-width: 100%; padding: 8px 10px; border: 1px solid #cbd5e0; border-radius: 6px; color: #2d3748; font: inherit; font-size: 13px; }
-        .effacer-recherche { border: 0; background: transparent; color: #4a5568; cursor: pointer; font-size: 18px; padding: 3px 7px; border-radius: 5px; }
-        .resultat-recherche { position: absolute; top: 10px; left: 50%; z-index: 25; transform: translateX(-50%); margin: 0; padding: 7px 12px; border-radius: 6px; background: rgba(255,255,255,0.95); color: #2d3748; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
-        .gare[hidden] { display: none; }
-        .gare:focus .infobulle { visibility: visible; opacity: 1; }
-        .zone-dessin { flex: 1; position: relative; background: #dee5ed; overflow: hidden; }
-        
-        /* Grille cartographique style SNCF */
-        .grille { stroke: rgba(0, 0, 0, 0.03); stroke-width: 1; }
-        
-        /* Silhouette géographique et Pays frontaliers */
-        .cote-maroc { fill: #f7fafc; stroke: #cbd5e0; stroke-width: 2; }
-        .mer { fill: #e2e8f0; }
-        .frontiere-texte { font-size: 12px; font-weight: bold; fill: #a0aec0; letter-spacing: 2px; }
-
-        /* Style des gares et popups */
-        .gare { position: absolute; width: 10px; height: 10px; background: #ffffff; border: 3px solid #b30000; border-radius: 50%; transform: translate(-50%, -50%); cursor: pointer; transition: all 0.2s; z-index: 10; }
-        .gare:hover { transform: translate(-50%, -50%) scale(1.4); background: #b30000; box-shadow: 0 0 10px rgba(179,0,0,0.6); }
-        .gare.projet { border-color: #ff9900; }
-        .nom-gare { position: absolute; font-size: 11px; font-weight: bold; color: #2d3748; white-space: nowrap; transform: translate(14px, -6px); text-shadow: 2px 2px 0 #fff, -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff; }
-        
-        /* Pictogramme Train Grande Vitesse intégré aux hubs principaux */
-        .picto-tgv { position: absolute; font-size: 9px; background: #b30000; color: white; padding: 1px 3px; border-radius: 3px; font-weight: bold; transform: translate(14px, 8px); box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-
-        /* Fenêtre d'info au survol (Popup) */
-        .infobulle { visibility: hidden; width: 160px; background-color: #2d3748; color: #fff; text-align: center; border-radius: 6px; padding: 8px; position: absolute; z-index: 30; bottom: 125%; left: 50%; margin-left: -80px; opacity: 0; transition: opacity 0.2s; font-size: 11px; font-weight: normal; line-height: 1.4; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .infobulle::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #2d3748 transparent transparent transparent; }
-        .gare:hover .infobulle { visibility: visible; opacity: 1; }
-
-        /* Tracé des voies ferrées */
-        svg { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
-        .rail-lgv { stroke: #b30000; stroke-width: 4.5; stroke-linecap: round; stroke-linejoin: round; fill: none; transition: opacity 0.3s; }
-        .rail-classique { stroke: #4a5568; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; fill: none; transition: opacity 0.3s; }
-        .rail-classique-tiret { stroke: #ffffff; stroke-width: 1.5; stroke-dasharray: 5,5; fill: none; }
-        .rail-projet { stroke: #ff9900; stroke-width: 3; stroke-dasharray: 6,4; stroke-linecap: round; fill: none; transition: opacity 0.3s; }
-        
-        /* Échelle cartographique officielle */
-        .echelle-carte { position: absolute; bottom: 20px; right: 20px; background: rgba(255,255,255,0.8); padding: 5px 10px; border-radius: 4px; border: 1px solid #cbd5e0; font-size: 10px; font-weight: bold; color: #718096; }
-        .barre-echelle { height: 3px; background: #718096; width: 50px; margin-top: 3px; }
-
-        /* Légende intégrée habillée */
-        .legende { position: absolute; bottom: 20px; left: 20px; background: rgba(255, 255, 255, 0.92); border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; z-index: 15; box-shadow: 0 4px 6px rgba(0,0,0,0.05); font-size: 12px; color: #4a5568; display: flex; flex-direction: column; gap: 8px; }
-        .legende-item { display: flex; align-items: center; gap: 10px; font-weight: 500; }
-        .puce-lgv { width: 20px; height: 4px; background: #b30000; border-radius: 2px; }
-        .puce-classique { width: 20px; height: 4px; background: #4a5568; border-radius: 2px; border-top: 1px dashed #fff; }
-        .puce-projet { width: 20px; height: 4px; border-top: 3px dashed #ff9900; }
-        @media (max-width: 700px) {
-            #header { font-size: 17px; }
-            #map-container { height: auto; min-height: calc(100vh - 76px); padding: 10px; }
-            .canvas-carte { min-height: 620px; }
-            .barre-outils { padding: 10px; gap: 8px; }
-            .titre-outils { width: 100%; }
-            .bouton-oncf { padding: 8px 10px; font-size: 12px; }
-            .recherche-gare { width: 100%; margin-left: 0; }
-            .champ-recherche { flex: 1; width: auto; }
-            .legende { bottom: 10px; left: 10px; padding: 9px; font-size: 11px; }
-            .echelle-carte { bottom: 10px; right: 10px; }
+        :root {
+            font-family: "Segoe UI", Arial, sans-serif;
+            color: #253246;
+            background: #e9edf2;
+            font-synthesis: none;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-width: 320px; }
+        #map { position: fixed; inset: 0; z-index: 0; background: #e9edf2; }
+        .leaflet-container { font: inherit; }
+        .topbar {
+            position: fixed; top: 14px; left: 14px; z-index: 800;
+            display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 28px);
+            padding: 11px 16px; border: 1px solid #dce2e9; border-radius: 10px;
+            background: rgba(255,255,255,.97); box-shadow: 0 4px 18px #17212e24;
+        }
+        .logo { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 8px; background: #9f111b; color: #fff; font-size: 12px; font-weight: 800; }
+        .topbar h1 { margin: 0; font-size: 16px; line-height: 1.2; }
+        .topbar p { margin: 3px 0 0; color: #64748b; font-size: 12px; }
+        .panel {
+            position: fixed; top: 82px; bottom: 18px; left: 14px; z-index: 700;
+            width: 330px; max-width: calc(100vw - 28px); overflow: auto;
+            padding: 16px; border: 1px solid #dce2e9; border-radius: 10px;
+            background: rgba(255,255,255,.97); box-shadow: 0 4px 18px #17212e24;
+        }
+        .panel h2 { margin: 0 0 10px; font-size: 14px; }
+        .panel h3 { margin: 15px 0 8px; font-size: 13px; }
+        .intro { margin: 0 0 12px; color: #526174; font-size: 12px; line-height: 1.5; }
+        .notice {
+            margin: 12px 0; padding: 10px; border: 1px solid #f1d59c; border-radius: 7px;
+            background: #fff8e8; color: #744c08; font-size: 11px; line-height: 1.45;
+        }
+        .field { display: grid; gap: 5px; margin: 9px 0; }
+        .field label, .layer-option { font-size: 12px; font-weight: 650; }
+        input[type="text"], input[type="search"], select, textarea {
+            width: 100%; min-height: 36px; padding: 8px 10px; border: 1px solid #cbd5e1;
+            border-radius: 6px; background: #fff; color: #253246; font: inherit; font-size: 13px;
+        }
+        textarea { min-height: 58px; resize: vertical; }
+        input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, .file-button:focus-within {
+            outline: 3px solid #5a94dc; outline-offset: 2px;
+        }
+        .button-row { display: flex; flex-wrap: wrap; gap: 7px; margin: 8px 0; }
+        button, .file-button {
+            display: inline-flex; align-items: center; justify-content: center; min-height: 34px;
+            padding: 7px 10px; border: 1px solid #d1d9e2; border-radius: 6px;
+            background: #fff; color: #26364a; font: inherit; font-size: 12px; font-weight: 650; cursor: pointer;
+        }
+        button:hover, .file-button:hover { background: #f3f6f9; }
+        button.primary { border-color: #9f111b; background: #9f111b; color: #fff; }
+        button.primary:hover { background: #7e0e16; }
+        button.active { border-color: #9f111b; box-shadow: 0 0 0 2px #9f111b25; }
+        button:disabled { cursor: not-allowed; opacity: .5; }
+        .panel-toggle { position: fixed; top: 82px; right: 14px; z-index: 800; min-height: 38px; box-shadow: 0 3px 12px #17212e24; }
+        .layer-list { display: grid; gap: 8px; }
+        .layer-option { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+        .layer-option input { accent-color: #9f111b; }
+        .swatch { display: inline-block; width: 18px; height: 4px; border-radius: 3px; }
+        .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+        .line-existing { background: #35485e; }
+        .line-operating { background: #18855b; }
+        .line-current { background: #d13b36; }
+        .line-maintenance { background: #d28a18; }
+        .line-planned { background: #8a55b5; }
+        .line-complete { background: #18855b; }
+        .measurement, .message { margin: 9px 0; padding: 9px; border-radius: 6px; font-size: 12px; line-height: 1.4; }
+        .measurement { background: #eef5ff; color: #1d4b84; font-weight: 700; }
+        .message { background: #eef2f6; color: #435267; }
+        .message.error { background: #fff0ef; color: #a5261f; }
+        .work-list { display: grid; gap: 7px; margin: 8px 0; }
+        .work-item { display: flex; align-items: center; gap: 7px; padding: 7px; border: 1px solid #e1e7ee; border-radius: 6px; }
+        .work-item .work-title { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 12px; cursor: pointer; }
+        .work-item small { display: block; margin-top: 2px; color: #64748b; font-size: 10px; }
+        .work-item button { min-height: 28px; padding: 4px 7px; }
+        .file-button input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+        .attribution-note { margin: 12px 0 0; color: #64748b; font-size: 10px; line-height: 1.4; }
+        .leaflet-control-attribution { font-size: 10px !important; }
+        @media (max-width: 650px) {
+            .topbar { top: 8px; left: 8px; padding: 8px 10px; }
+            .topbar h1 { font-size: 14px; }
+            .topbar p { font-size: 10px; }
+            .panel {
+                top: auto; right: 8px; bottom: 8px; left: 8px; width: auto;
+                max-width: none; max-height: 43vh; padding: 12px;
+            }
+            .panel h3 { margin-top: 11px; }
+            .leaflet-bottom { bottom: 44vh; }
+            .leaflet-left { left: 8px; }
+            .leaflet-top { top: 58px; }
+            .panel-toggle { top: 8px; right: 8px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
         }
     </style>
 </head>
 <body>
+    <div id="map" aria-label="Carte interactive du corridor ferroviaire Kénitra–Marrakech"></div>
+    <header class="topbar">
+        <div class="logo" aria-hidden="true">ONCF</div>
+        <div>
+            <h1>Corridor ferroviaire Kénitra – Marrakech</h1>
+            <p>Carte de travail · gares, distances et suivi des interventions</p>
+        </div>
+    </header>
+    <button id="toggle-panel" class="panel-toggle" type="button" aria-controls="tools-panel" aria-expanded="true">Masquer les outils</button>
 
-    <div id="header">
-        Infrastructures Ferroviaires - Maroc<br>
-        <span style="font-size: 12px; font-weight: normal; opacity: 90%;">Réseau ONCF Interactif et Sécurisé</span>
-    </div>
-    
-    <div id="map-container">
-        <div class="canvas-carte">
-            <div class="barre-outils">
-                <span class="titre-outils">Filtres Réseau :</span>
-                <button class="bouton-oncf filtre-reseau" type="button" data-filtre="all" aria-pressed="true">Tout le Réseau</button>
-                <button class="bouton-oncf filtre-reseau" type="button" data-filtre="lgv" aria-pressed="false">Lignes Grande Vitesse (Al Boraq)</button>
-                <label class="recherche-gare">
-                    <span class="titre-outils">Rechercher une gare :</span>
-                    <input id="recherche-gare" class="champ-recherche" type="search" placeholder="Ex. Tanger, Kenitra…" autocomplete="off" aria-label="Rechercher une gare">
-                    <button id="effacer-recherche" class="effacer-recherche" type="button" aria-label="Effacer la recherche" title="Effacer la recherche">×</button>
+    <aside id="tools-panel" class="panel" aria-label="Outils cartographiques">
+        <section>
+            <h2>Rechercher une gare</h2>
+            <div class="field">
+                <label for="station-search">Nom de la gare</label>
+                <input id="station-search" type="search" list="station-list" placeholder="Ex. Rabat Agdal" autocomplete="off">
+                <datalist id="station-list"></datalist>
+            </div>
+            <div class="button-row">
+                <button id="search-button" class="primary" type="button">Centrer sur la gare</button>
+                <button id="clear-search" type="button">Effacer</button>
+            </div>
+        </section>
+
+        <div class="notice">
+            <strong>Carte de travail, pas une source officielle.</strong>
+            Le fond OpenStreetMap donne le contexte géographique. Les gares sont des repères indicatifs ; importer le tracé RFN/ONCF validé et les données de travaux avant toute présentation comme état officiel.
+        </div>
+
+        <section>
+            <h3>Couches visibles</h3>
+            <div class="layer-list">
+                <label class="layer-option"><input id="show-stations" type="checkbox" checked> Gares repères</label>
+                <label class="layer-option"><input id="show-corridor" type="checkbox" checked> Axe d’étude entre gares (indicatif)</label>
+                <label class="layer-option"><input class="show-status" data-status="exploite" type="checkbox" checked><span class="swatch line-operating"></span> En exploitation</label>
+                <label class="layer-option"><input class="show-status" data-status="en-cours" type="checkbox" checked><span class="swatch line-current"></span> Travaux en cours</label>
+                <label class="layer-option"><input class="show-status" data-status="maintenance" type="checkbox" checked><span class="swatch line-maintenance"></span> Maintenance</label>
+                <label class="layer-option"><input class="show-status" data-status="previsionnel" type="checkbox" checked><span class="swatch line-planned"></span> Prévisionnel</label>
+                <label class="layer-option"><input class="show-status" data-status="termine" type="checkbox" checked><span class="swatch line-complete"></span> Réalisé / modifié</label>
+            </div>
+        </section>
+
+        <section>
+            <h3>Mesurer une distance</h3>
+            <p class="intro">Clique sur « Démarrer », puis sur au moins deux points de la carte. La distance suit les clics, pas le tracé exact des voies.</p>
+            <div class="button-row">
+                <button id="measure-start" type="button">Démarrer la mesure</button>
+                <button id="measure-finish" type="button" disabled>Terminer</button>
+                <button id="measure-clear" type="button">Effacer</button>
+            </div>
+            <output id="measure-result" class="measurement" aria-live="polite" hidden></output>
+        </section>
+
+        <section>
+            <h3>Ajouter un événement réseau</h3>
+            <p class="intro">Dessine un linéaire, une zone ou place un point sur la carte. Les annotations sont locales et à valider avant diffusion.</p>
+            <div class="field">
+                <label for="work-title">Intitulé</label>
+                <input id="work-title" type="text" maxlength="100" placeholder="Ex. Renouvellement de voie">
+            </div>
+            <div class="field">
+                <label for="work-status">Statut</label>
+                <select id="work-status">
+                    <option value="exploite">En exploitation</option>
+                    <option value="en-cours">Travaux en cours</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="previsionnel">Prévisionnel</option>
+                    <option value="termine">Réalisé / modifié</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="work-note">Note / référence (facultatif)</label>
+                <textarea id="work-note" maxlength="500" placeholder="Description, date ou référence à confirmer"></textarea>
+            </div>
+            <div class="button-row">
+                <button id="draw-line" class="primary" type="button">Tracer un linéaire</button>
+                <button id="draw-area" type="button">Tracer une zone</button>
+                <button id="add-point" type="button">Placer un point</button>
+            </div>
+            <div id="draw-controls" class="button-row" hidden>
+                <button id="undo-point" type="button">Annuler le dernier point</button>
+                <button id="save-drawing" class="primary" type="button" disabled>Enregistrer le tracé</button>
+                <button id="cancel-drawing" type="button">Annuler</button>
+            </div>
+        </section>
+
+        <section>
+            <h3>Annotations de cette carte</h3>
+            <div id="work-list" class="work-list"><p class="intro">Aucune annotation enregistrée.</p></div>
+            <div class="button-row">
+                <button id="export-data" type="button">Exporter GeoJSON</button>
+                <label class="file-button">Importer GeoJSON
+                    <input id="import-data" type="file" accept=".geojson,.json,application/geo+json,application/json">
                 </label>
             </div>
-            
-            <div class="zone-dessin">
-                <p id="resultat-recherche" class="resultat-recherche" role="status" aria-live="polite" hidden></p>
-                <svg viewBox="0 0 950 650" preserveAspectRatio="none" role="img" aria-label="Carte du réseau ferroviaire du Maroc">
-                    <!-- Fond Marine & Silhouette Terrestre épurée -->
-                    <rect width="100%" height="100%" class="mer" />
-                    <path class="cote-maroc" d="M 0,250 C 150,220 300,180 400,150 C 450,120 500,40 550,20 L 950,20 L 950,650 L 0,650 Z" />
-                    
-                    <!-- Lignes de Grille Technique de fond -->
-                    <line x1="200" y1="0" x2="200" y2="650" class="grille" />
-                    <line x1="400" y1="0" x2="400" y2="650" class="grille" />
-                    <line x1="600" y1="0" x2="600" y2="650" class="grille" />
-                    <line x1="800" y1="0" x2="800" y2="650" class="grille" />
-                    <line x1="0" y1="200" x2="950" y2="200" class="grille" />
-                    <line x1="0" y1="400" x2="950" y2="400" class="grille" />
+            <p class="attribution-note">Les annotations sont conservées dans ce navigateur ; exporte-les en GeoJSON pour les partager. L’import attend des géométries GeoJSON WGS84 (EPSG:4326) et des propriétés <code>title</code> et <code>status</code> : <code>exploite</code>, <code>en-cours</code>, <code>maintenance</code>, <code>previsionnel</code> ou <code>termine</code>.</p>
+        </section>
+        <p id="app-message" class="message" role="status" aria-live="polite">Chargement de la carte…</p>
+    </aside>
 
-                    <!-- Indication Textuelle des Frontières / Pays voisins -->
-                    <text x="700" y="300" class="frontiere-texte">ALGÉRIE</text>
-                    <text x="350" y="35" class="frontiere-texte" style="font-size:10px;">ESPAGNE</text>
-
-                    <!-- Les Voies Ferrées -->
-                    <g id="reseau-ferre">
-                        <g class="groupe-classique">
-                            <path class="rail-classique" d="M 450 120 L 590 140 L 750 110" />
-                            <path class="rail-classique-tiret" d="M 450 120 L 590 140 L 750 110" />
-                        </g>
-                        <g class="groupe-classique">
-                            <path class="rail-classique" d="M 450 120 L 480 200 L 420 310 L 320 440" />
-                            <path class="rail-classique-tiret" d="M 450 120 L 480 200 L 420 310 L 320 440" />
-                        </g>
-                        <path id="ligne-projet" class="rail-projet" d="M 320 440 L 220 540" />
-                        <path id="ligne-lgv" class="rail-lgv" d="M 540 30 L 450 120 L 480 200 L 420 310" />
-                    </g>
-                </svg>
-
-                <!-- Bloc Échelle Cartographique -->
-                <div class="echelle-carte">
-                    <span>100 km</span>
-                    <div class="barre-echelle"></div>
-                </div>
-
-                <!-- Bloc Légende -->
-                <div class="legende">
-                    <div class="legende-item"><div class="puce-lgv"></div> <span>Grande Vitesse (LGV)</span></div>
-                    <div class="legende-item"><div class="puce-classique"></div> <span>Ligne Conventionnelle</span></div>
-                    <div class="legende-item"><div class="puce-projet"></div> <span>Extension en Projet</span></div>
-                </div>
-
-                <!-- Points des gares, Équivalents Pictos TGV et Infobulles intégrées -->
-                <div class="gare" data-lignes="lgv" data-search="Tanger Tanger Ville" style="top: 4.62%; left: 56.84%;" tabindex="0">
-                    <span class="nom-gare">Tanger Ville</span><span class="picto-tgv">TGV</span>
-                    <div class="infobulle"><b>Gare Tanger Ville</b><br>Terminus Nord Al Boraq<br>Correspondances régionales</div>
-                </div>
-                <div class="gare" data-lignes="lgv classique" data-search="Kenitra Kénitra" style="top: 18.46%; left: 47.37%;" tabindex="0">
-                    <span class="nom-gare">Kénitra</span><span class="picto-tgv">TGV</span>
-                    <div class="infobulle"><b>Gare de Kénitra</b><br>Jonction LGV / Classique<br>Hub régional</div>
-                </div>
-                <div class="gare" data-lignes="classique" data-search="Fes Fès" style="top: 21.54%; left: 62.11%;" tabindex="0">
-                    <span class="nom-gare">Fès</span>
-                    <div class="infobulle"><b>Gare de Fès Ville</b><br>Axe Oriental<br>Ligne conventionnelle</div>
-                </div>
-                <div class="gare" data-lignes="classique" data-search="Oujda" style="top: 16.92%; left: 78.95%;" tabindex="0">
-                    <span class="nom-gare">Oujda</span>
-                    <div class="infobulle"><b>Gare d'Oujda</b><br>Terminus Est<br>Ligne conventionnelle</div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script>
         (() => {
-            const gares = Array.from(document.querySelectorAll('.gare'));
-            const boutonsFiltre = Array.from(document.querySelectorAll('.filtre-reseau'));
-            const recherche = document.getElementById('recherche-gare');
-            const boutonEffacer = document.getElementById('effacer-recherche');
-            const statut = document.getElementById('resultat-recherche');
-            let filtreActif = 'all';
+            const message = document.getElementById('app-message');
+            const storageKey = 'websig-kenitra-marrakech-annotations-v1';
+            const statusLabels = {
+                exploite: 'En exploitation',
+                'en-cours': 'Travaux en cours',
+                maintenance: 'Maintenance',
+                previsionnel: 'Prévisionnel',
+                termine: 'Réalisé / modifié'
+            };
+            const statusColors = {
+                exploite: '#18855b',
+                'en-cours': '#d13b36',
+                maintenance: '#d28a18',
+                previsionnel: '#8a55b5',
+                termine: '#18855b'
+            };
+            const stations = [
+                { name: 'Kénitra', aliases: 'kenitra', lat: 34.261, lon: -6.580 },
+                { name: 'Salé Tabriquet', aliases: 'sale tabriquet', lat: 34.045, lon: -6.790 },
+                { name: 'Rabat Ville', aliases: 'rabat ville', lat: 34.022, lon: -6.839 },
+                { name: 'Rabat Agdal', aliases: 'rabat agdal', lat: 33.990, lon: -6.851 },
+                { name: 'Témara', aliases: 'temara', lat: 33.923, lon: -6.918 },
+                { name: 'Skhirat', aliases: 'skhirat', lat: 33.850, lon: -7.037 },
+                { name: 'Bouznika', aliases: 'bouznika', lat: 33.789, lon: -7.159 },
+                { name: 'Mohammédia', aliases: 'mohammedia', lat: 33.687, lon: -7.383 },
+                { name: 'Casa Voyageurs', aliases: 'casablanca casa voyageurs', lat: 33.597, lon: -7.590 },
+                { name: 'Casa Oasis', aliases: 'casablanca casa oasis', lat: 33.566, lon: -7.621 },
+                { name: 'Bouskoura', aliases: 'bouskoura', lat: 33.449, lon: -7.652 },
+                { name: 'Berrechid', aliases: 'berrechid', lat: 33.265, lon: -7.587 },
+                { name: 'Settat', aliases: 'settat', lat: 33.002, lon: -7.620 },
+                { name: 'Benguerir', aliases: 'ben guerir benguerir', lat: 32.235, lon: -7.951 },
+                { name: 'Marrakech', aliases: 'marrakech marrakesh', lat: 31.629, lon: -8.018 }
+            ];
 
-            const normaliser = (texte) => texte
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '')
-                .toLocaleLowerCase('fr')
-                .trim();
-
-            function actualiserCarte() {
-                const terme = normaliser(recherche.value);
-                let nombreVisible = 0;
-
-                gares.forEach((gare) => {
-                    const correspondRecherche = !terme || normaliser(
-                        `${gare.dataset.search} ${gare.textContent}`
-                    ).includes(terme);
-                    const correspondFiltre = filtreActif === 'all'
-                        || gare.dataset.lignes.split(' ').includes(filtreActif);
-                    const visible = correspondRecherche && correspondFiltre;
-
-                    gare.hidden = !visible;
-                    if (visible) nombreVisible += 1;
-                });
-
-                document.querySelectorAll('.groupe-classique').forEach((ligne) => {
-                    ligne.style.display = filtreActif === 'lgv' ? 'none' : '';
-                });
-                document.getElementById('ligne-projet').style.display = filtreActif === 'lgv' ? 'none' : '';
-
-                if (terme) {
-                    statut.hidden = false;
-                    statut.textContent = nombreVisible
-                        ? `${nombreVisible} gare${nombreVisible > 1 ? 's' : ''} trouvée${nombreVisible > 1 ? 's' : ''}`
-                        : 'Aucune gare trouvée pour cette recherche.';
-                } else {
-                    statut.hidden = true;
-                    statut.textContent = '';
-                }
+            function showMessage(text, isError = false) {
+                message.textContent = text;
+                message.classList.toggle('error', isError);
             }
 
-            boutonsFiltre.forEach((bouton) => {
-                bouton.addEventListener('click', () => {
-                    filtreActif = bouton.dataset.filtre;
-                    boutonsFiltre.forEach((autre) => {
-                        autre.setAttribute('aria-pressed', String(autre === bouton));
-                    });
-                    actualiserCarte();
-                });
+            function normalize(text) {
+                return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr').trim();
+            }
+
+            if (!window.L) {
+                showMessage('La bibliothèque cartographique n’a pas pu être chargée. Vérifie la connexion Internet puis actualise la page.', true);
+                return;
+            }
+
+            const map = L.map('map', { zoomControl: false, doubleClickZoom: true }).setView([33.08, -7.36], 7);
+            L.control.zoom({ position: 'topright' }).addTo(map);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            const stationLayer = L.featureGroup().addTo(map);
+            const corridorLayer = L.featureGroup().addTo(map);
+            const draftLayer = L.featureGroup().addTo(map);
+            const workLayers = {};
+            Object.keys(statusLabels).forEach((status) => {
+                workLayers[status] = L.featureGroup().addTo(map);
+            });
+            const corridorPoints = stations.map((station) => [station.lat, station.lon]);
+            L.polyline(corridorPoints, {
+                color: '#263f5b', weight: 3, opacity: 0.72, dashArray: '3 8', lineCap: 'round'
+            }).bindTooltip('Liaison indicative entre gares — ce trait n’est pas le tracé RFN').addTo(corridorLayer);
+
+            const markersByStation = new Map();
+            stations.forEach((station) => {
+                const marker = L.circleMarker([station.lat, station.lon], {
+                    radius: 5, weight: 2, color: '#fff', fillColor: '#9f111b', fillOpacity: 1
+                }).bindPopup(`<strong>${station.name}</strong><br><small>Repère géographique indicatif</small>`);
+                marker.addTo(stationLayer);
+                markersByStation.set(station.name, marker);
+                const option = document.createElement('option');
+                option.value = station.name;
+                document.getElementById('station-list').appendChild(option);
             });
 
-            recherche.addEventListener('input', actualiserCarte);
-            boutonEffacer.addEventListener('click', () => {
-                recherche.value = '';
-                actualiserCarte();
-                recherche.focus();
-            });
-            recherche.addEventListener('keydown', (event) => {
-                if (event.key === 'Escape' && recherche.value) {
-                    recherche.value = '';
-                    actualiserCarte();
+            let annotations = [];
+            let annotationLoadError = false;
+            let mode = null;
+            let drawingPoints = [];
+            let measurePoints = [];
+            let measureLine = null;
+            let measureMarkers = [];
+            const statusInputs = Array.from(document.querySelectorAll('.show-status'));
+
+            function validFeature(feature) {
+                if (!feature || feature.type !== 'Feature' || !feature.geometry) return false;
+                if (!['Point', 'LineString', 'MultiLineString', 'Polygon'].includes(feature.geometry.type)) return false;
+                if (!feature.properties || !Object.hasOwn(statusLabels, feature.properties.status)) return false;
+                if (typeof feature.properties.title !== 'string') return false;
+                const validPosition = (position) => Array.isArray(position)
+                    && position.length >= 2
+                    && Number.isFinite(position[0])
+                    && Number.isFinite(position[1])
+                    && Math.abs(position[0]) <= 180
+                    && Math.abs(position[1]) <= 90;
+                const coordinates = feature.geometry.coordinates;
+                if (feature.geometry.type === 'Point') return validPosition(coordinates);
+                if (feature.geometry.type === 'LineString') {
+                    return Array.isArray(coordinates) && coordinates.length >= 2 && coordinates.every(validPosition);
+                }
+                if (feature.geometry.type === 'MultiLineString') {
+                    return Array.isArray(coordinates)
+                        && coordinates.length > 0
+                        && coordinates.every((line) => Array.isArray(line) && line.length >= 2 && line.every(validPosition));
+                }
+                return Array.isArray(coordinates)
+                    && coordinates.length > 0
+                    && coordinates.every((ring) => Array.isArray(ring)
+                        && ring.length >= 4
+                        && ring.every(validPosition)
+                        && ring[0][0] === ring[ring.length - 1][0]
+                        && ring[0][1] === ring[ring.length - 1][1]);
+            }
+
+            function saveAnnotations() {
+                try {
+                    localStorage.setItem(storageKey, JSON.stringify(annotations));
+                } catch (error) {
+                    showMessage(`Impossible d’enregistrer les annotations dans ce navigateur : ${error.message}`, true);
+                    return false;
+                }
+                return true;
+            }
+
+            function featureStyle(feature) {
+                const color = statusColors[feature.properties.status];
+                return {
+                    color, weight: 6, opacity: 0.9, lineCap: 'round', lineJoin: 'round',
+                    fillColor: color, fillOpacity: feature.geometry.type === 'Polygon' ? 0.22 : 0
+                };
+            }
+
+            function renderAnnotations() {
+                Object.values(workLayers).forEach((layer) => layer.clearLayers());
+                annotations.forEach((feature, index) => {
+                    const layer = L.geoJSON(feature, {
+                        style: featureStyle,
+                        pointToLayer: (geoFeature, latlng) => L.circleMarker(latlng, {
+                            radius: 8, color: '#fff', weight: 2, fillColor: statusColors[geoFeature.properties.status], fillOpacity: 1
+                        }),
+                        onEachFeature: (geoFeature, layer) => {
+                            const props = geoFeature.properties;
+                            const note = props.note ? `<br>${escapeHtml(props.note)}` : '';
+                            layer.bindPopup(`<strong>${escapeHtml(props.title)}</strong><br>${statusLabels[props.status]}${note}`);
+                        }
+                    });
+                    if (document.querySelector(`.show-status[data-status="${feature.properties.status}"]`).checked) {
+                        layer.addTo(workLayers[feature.properties.status]);
+                    }
+                    layer.eachLayer((child) => child.featureIndex = index);
+                });
+                renderAnnotationList();
+            }
+
+            function escapeHtml(text) {
+                const element = document.createElement('span');
+                element.textContent = text;
+                return element.innerHTML;
+            }
+
+            function renderAnnotationList() {
+                const list = document.getElementById('work-list');
+                list.replaceChildren();
+                if (!annotations.length) {
+                    const empty = document.createElement('p');
+                    empty.className = 'intro';
+                    empty.textContent = 'Aucune annotation enregistrée.';
+                    list.appendChild(empty);
+                    return;
+                }
+                annotations.forEach((feature, index) => {
+                    const row = document.createElement('div');
+                    row.className = 'work-item';
+                    const dot = document.createElement('span');
+                    dot.className = 'legend-dot';
+                    dot.style.backgroundColor = statusColors[feature.properties.status];
+                    const title = document.createElement('span');
+                    title.className = 'work-title';
+                    title.textContent = feature.properties.title;
+                    const sub = document.createElement('small');
+                    sub.textContent = statusLabels[feature.properties.status];
+                    title.appendChild(sub);
+                    title.addEventListener('click', () => zoomToFeature(feature));
+                    const remove = document.createElement('button');
+                    remove.type = 'button';
+                    remove.textContent = 'Supprimer';
+                    remove.setAttribute('aria-label', `Supprimer ${feature.properties.title}`);
+                    remove.addEventListener('click', () => {
+                        const [removed] = annotations.splice(index, 1);
+                        if (saveAnnotations()) renderAnnotations();
+                        else annotations.splice(index, 0, removed);
+                    });
+                    row.append(dot, title, remove);
+                    list.appendChild(row);
+                });
+            }
+
+            function zoomToFeature(feature) {
+                if (feature.geometry.type === 'Point') {
+                    const [longitude, latitude] = feature.geometry.coordinates;
+                    map.setView([latitude, longitude], 13);
+                    return;
+                }
+                const layer = L.geoJSON(feature);
+                const bounds = layer.getBounds();
+                if (bounds.isValid()) map.fitBounds(bounds.pad(0.5), { maxZoom: 13 });
+            }
+
+            function featureFromPoints(points, geometryType) {
+                const title = document.getElementById('work-title').value.trim();
+                if (!title) {
+                    showMessage('Saisis un intitulé avant d’enregistrer.', true);
+                    document.getElementById('work-title').focus();
+                    return null;
+                }
+                const status = document.getElementById('work-status').value;
+                const note = document.getElementById('work-note').value.trim();
+                const coordinates = points.map((point) => [point.lng, point.lat]);
+                const geometryCoordinates = geometryType === 'Point'
+                    ? coordinates[0]
+                    : geometryType === 'Polygon'
+                        ? [[...coordinates, coordinates[0]]]
+                        : coordinates;
+                return {
+                    type: 'Feature',
+                    properties: { title, status, note, createdAt: new Date().toISOString() },
+                    geometry: {
+                        type: geometryType,
+                        coordinates: geometryCoordinates
+                    }
+                };
+            }
+
+            function stopMode() {
+                mode = null;
+                drawingPoints = [];
+                draftLayer.clearLayers();
+                document.getElementById('draw-controls').hidden = true;
+                document.getElementById('draw-line').classList.remove('active');
+                document.getElementById('draw-area').classList.remove('active');
+                document.getElementById('add-point').classList.remove('active');
+                document.getElementById('measure-start').classList.remove('active');
+                map.getContainer().style.cursor = '';
+                document.getElementById('measure-finish').disabled = true;
+            }
+
+            function saveFeature(feature) {
+                annotations.push(feature);
+                if (!saveAnnotations()) {
+                    annotations.pop();
+                    return;
+                }
+                renderAnnotations();
+                showMessage(`Annotation enregistrée : ${feature.properties.title}. Elle reste locale à ce navigateur.`);
+            }
+
+            function startLineDrawing() {
+                stopMode();
+                mode = 'line';
+                document.getElementById('draw-controls').hidden = false;
+                document.getElementById('draw-line').classList.add('active');
+                map.getContainer().style.cursor = 'crosshair';
+                showMessage('Clique sur la carte pour ajouter les points du linéaire, puis termine le tracé.');
+            }
+
+            function startAreaDrawing() {
+                stopMode();
+                mode = 'area';
+                document.getElementById('draw-controls').hidden = false;
+                document.getElementById('draw-area').classList.add('active');
+                map.getContainer().style.cursor = 'crosshair';
+                showMessage('Clique sur au moins trois points pour dessiner la zone, puis termine le tracé.');
+            }
+
+            function startPointDrawing() {
+                stopMode();
+                mode = 'point';
+                document.getElementById('add-point').classList.add('active');
+                map.getContainer().style.cursor = 'crosshair';
+                showMessage('Clique à l’emplacement de l’événement pour ajouter le point.');
+            }
+
+            function startMeasure() {
+                stopMode();
+                mode = 'measure';
+                measurePoints = [];
+                if (measureLine) map.removeLayer(measureLine);
+                measureMarkers.forEach((marker) => map.removeLayer(marker));
+                measureMarkers = [];
+                const result = document.getElementById('measure-result');
+                result.hidden = false;
+                result.textContent = 'Clique sur au moins deux points de la carte.';
+                document.getElementById('measure-start').classList.add('active');
+                document.getElementById('measure-finish').disabled = false;
+                map.getContainer().style.cursor = 'crosshair';
+                showMessage('Mode mesure actif. Ajoute des points, puis clique sur « Terminer ».');
+            }
+
+            map.on('click', (event) => {
+                if (mode === 'measure') {
+                    measurePoints.push(event.latlng);
+                    measureMarkers.push(L.circleMarker(event.latlng, {
+                        radius: 4, color: '#fff', weight: 2, fillColor: '#1266b1', fillOpacity: 1
+                    }).addTo(map));
+                    if (measureLine) map.removeLayer(measureLine);
+                    if (measurePoints.length > 1) {
+                        measureLine = L.polyline(measurePoints, { color: '#1266b1', weight: 3 }).addTo(map);
+                        const meters = measurePoints.slice(1).reduce((total, point, index) => {
+                            return total + map.distance(measurePoints[index], point);
+                        }, 0);
+                        document.getElementById('measure-result').textContent = `Distance mesurée : ${meters >= 1000 ? `${(meters / 1000).toFixed(2)} km` : `${Math.round(meters)} m`}`;
+                    }
+                    return;
+                }
+                if (mode === 'point') {
+                    const feature = featureFromPoints([event.latlng], 'Point');
+                    if (feature) {
+                        saveFeature(feature);
+                        stopMode();
+                    }
+                    return;
+                }
+                if (mode === 'line' || mode === 'area') {
+                    drawingPoints.push(event.latlng);
+                    L.circleMarker(event.latlng, { radius: 4, color: '#fff', weight: 2, fillColor: '#9f111b' }).addTo(draftLayer);
+                    if ((mode === 'line' && drawingPoints.length > 1) || (mode === 'area' && drawingPoints.length > 2)) {
+                        draftLayer.eachLayer((layer) => {
+                            if (layer instanceof L.Polyline && !(layer instanceof L.CircleMarker)) draftLayer.removeLayer(layer);
+                        });
+                        const style = { color: '#9f111b', weight: 4, dashArray: '7 5', fillColor: '#9f111b', fillOpacity: 0.15 };
+                        if (mode === 'area') L.polygon(drawingPoints, style).addTo(draftLayer);
+                        else L.polyline(drawingPoints, style).addTo(draftLayer);
+                    }
+                    document.getElementById('save-drawing').disabled = drawingPoints.length < (mode === 'area' ? 3 : 2);
+                    showMessage(`${drawingPoints.length} point${drawingPoints.length > 1 ? 's' : ''} dans le tracé.`);
                 }
             });
 
-            actualiserCarte();
+            document.getElementById('search-button').addEventListener('click', () => {
+                const query = normalize(document.getElementById('station-search').value);
+                if (!query) {
+                    showMessage('Saisis le nom d’une gare à rechercher.', true);
+                    return;
+                }
+                const station = stations.find((item) => normalize(`${item.name} ${item.aliases}`).includes(query));
+                if (!station) {
+                    showMessage('Gare introuvable dans les repères de l’axe. Essaie un autre nom.', true);
+                    return;
+                }
+                stationLayer.addTo(map);
+                document.getElementById('show-stations').checked = true;
+                map.setView([station.lat, station.lon], 12);
+                markersByStation.get(station.name).openPopup();
+                showMessage(`Carte centrée sur ${station.name}.`);
+            });
+            document.getElementById('station-search').addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') document.getElementById('search-button').click();
+                if (event.key === 'Escape') event.currentTarget.value = '';
+            });
+            document.getElementById('clear-search').addEventListener('click', () => {
+                document.getElementById('station-search').value = '';
+                showMessage('Recherche effacée.');
+            });
+            document.getElementById('toggle-panel').addEventListener('click', (event) => {
+                const panel = document.getElementById('tools-panel');
+                const hidden = !panel.hidden;
+                panel.hidden = hidden;
+                event.currentTarget.setAttribute('aria-expanded', String(!hidden));
+                event.currentTarget.textContent = hidden ? 'Afficher les outils' : 'Masquer les outils';
+                window.setTimeout(() => map.invalidateSize(), 100);
+            });
+            document.getElementById('show-stations').addEventListener('change', (event) => {
+                if (event.currentTarget.checked) stationLayer.addTo(map);
+                else map.removeLayer(stationLayer);
+            });
+            document.getElementById('show-corridor').addEventListener('change', (event) => {
+                if (event.currentTarget.checked) corridorLayer.addTo(map);
+                else map.removeLayer(corridorLayer);
+            });
+            statusInputs.forEach((input) => input.addEventListener('change', renderAnnotations));
+
+            document.getElementById('measure-start').addEventListener('click', startMeasure);
+            document.getElementById('measure-finish').addEventListener('click', () => {
+                if (measurePoints.length < 2) {
+                    showMessage('Ajoute au moins deux points avant de terminer la mesure.', true);
+                    return;
+                }
+                stopMode();
+                showMessage('Mesure terminée. Clique sur « Effacer » pour la retirer.');
+            });
+            document.getElementById('measure-clear').addEventListener('click', () => {
+                if (measureLine) map.removeLayer(measureLine);
+                measureLine = null;
+                measureMarkers.forEach((marker) => map.removeLayer(marker));
+                measureMarkers = [];
+                measurePoints = [];
+                document.getElementById('measure-result').hidden = true;
+                if (mode === 'measure') stopMode();
+                showMessage('Mesure effacée.');
+            });
+            document.getElementById('draw-line').addEventListener('click', startLineDrawing);
+            document.getElementById('draw-area').addEventListener('click', startAreaDrawing);
+            document.getElementById('add-point').addEventListener('click', startPointDrawing);
+            document.getElementById('undo-point').addEventListener('click', () => {
+                if (!drawingPoints.length) return;
+                const drawingMode = mode;
+                const remaining = drawingPoints.slice(0, -1);
+                stopMode();
+                mode = drawingMode;
+                document.getElementById('draw-controls').hidden = false;
+                document.getElementById(drawingMode === 'area' ? 'draw-area' : 'draw-line').classList.add('active');
+                map.getContainer().style.cursor = 'crosshair';
+                drawingPoints = remaining;
+                remaining.forEach((point) => {
+                    L.circleMarker(point, { radius: 4, color: '#fff', weight: 2, fillColor: '#9f111b' }).addTo(draftLayer);
+                });
+                if ((drawingMode === 'line' && drawingPoints.length > 1) || (drawingMode === 'area' && drawingPoints.length > 2)) {
+                    const style = { color: '#9f111b', weight: 4, dashArray: '7 5', fillColor: '#9f111b', fillOpacity: 0.15 };
+                    if (drawingMode === 'area') L.polygon(drawingPoints, style).addTo(draftLayer);
+                    else L.polyline(drawingPoints, style).addTo(draftLayer);
+                }
+                document.getElementById('save-drawing').disabled = drawingPoints.length < (drawingMode === 'area' ? 3 : 2);
+                showMessage(`${drawingPoints.length} point${drawingPoints.length > 1 ? 's' : ''} dans le tracé.`);
+            });
+            document.getElementById('save-drawing').addEventListener('click', () => {
+                if (drawingPoints.length < (mode === 'area' ? 3 : 2)) return;
+                const geometryType = mode === 'area' ? 'Polygon' : 'LineString';
+                const feature = featureFromPoints(drawingPoints, geometryType);
+                if (feature) {
+                    saveFeature(feature);
+                    stopMode();
+                }
+            });
+            document.getElementById('cancel-drawing').addEventListener('click', () => {
+                stopMode();
+                showMessage('Tracé annulé.');
+            });
+
+            document.getElementById('export-data').addEventListener('click', () => {
+                const collection = { type: 'FeatureCollection', name: 'annotations-corridor-kenitra-marrakech', features: annotations };
+                const blob = new Blob([JSON.stringify(collection, null, 2)], { type: 'application/geo+json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'annotations-kenitra-marrakech.geojson';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+                showMessage('Fichier GeoJSON exporté.');
+            });
+            document.getElementById('import-data').addEventListener('change', async (event) => {
+                const input = event.currentTarget;
+                const file = input.files[0];
+                if (!file) return;
+                try {
+                    const parsed = JSON.parse(await file.text());
+                    const features = parsed.type === 'FeatureCollection' && Array.isArray(parsed.features)
+                        ? parsed.features
+                        : parsed.type === 'Feature' ? [parsed] : null;
+                    if (!features || !features.every(validFeature)) {
+                        throw new Error('Le GeoJSON doit contenir des points ou lignes avec un titre et un statut valide.');
+                    }
+                    const previous = annotations;
+                    annotations = features;
+                    if (!saveAnnotations()) {
+                        annotations = previous;
+                        return;
+                    }
+                    renderAnnotations();
+                    showMessage(`${features.length} annotation${features.length === 1 ? '' : 's'} GeoJSON importée${features.length === 1 ? '' : 's'}.`);
+                } catch (error) {
+                    showMessage(`Import GeoJSON impossible : ${error.message}`, true);
+                } finally {
+                    input.value = '';
+                }
+            });
+
+            try {
+                const saved = localStorage.getItem(storageKey);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (!Array.isArray(parsed) || !parsed.every(validFeature)) {
+                        throw new Error('Les données locales ne sont pas valides.');
+                    }
+                    annotations = parsed;
+                }
+            } catch (error) {
+                annotationLoadError = true;
+                showMessage(`Annotations locales non chargées : ${error.message}`, true);
+            }
+            renderAnnotations();
+            const bounds = L.latLngBounds(corridorPoints);
+            const mobile = window.matchMedia('(max-width: 650px)').matches;
+            map.fitBounds(bounds, {
+                paddingTopLeft: mobile ? [20, 80] : [370, 100],
+                paddingBottomRight: mobile ? [20, window.innerHeight * 0.46] : [40, 35],
+                maxZoom: 8
+            });
+            window.setTimeout(() => map.invalidateSize(), 100);
+            window.addEventListener('resize', () => map.invalidateSize());
+            if (!annotations.length && !annotationLoadError) {
+                showMessage('Carte prête. Les lignes de travaux et prévisions apparaîtront après leur saisie ou import GeoJSON.');
+            }
         })();
     </script>
 </body>
