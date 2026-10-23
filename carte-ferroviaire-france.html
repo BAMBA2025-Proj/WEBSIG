@@ -222,10 +222,12 @@
                         </div>
                         <div id="annotation-list" class="annotation-list"><p class="annotation-intro">Aucune annotation enregistrée.</p></div>
                         <div class="annotation-actions">
-                            <button id="export-annotations" type="button">Exporter GeoJSON</button>
+                            <button id="export-kml" type="button">Google My Maps (KML)</button>
+                            <button id="export-csv" type="button">Excel (CSV)</button>
+                            <button id="export-annotations" type="button">GeoJSON</button>
                             <label class="file-button">Importer GeoJSON<input id="import-annotations" type="file" accept=".geojson,.json,application/geo+json,application/json"></label>
                         </div>
-                        <p class="annotation-file-note">Les annotations sont conservées dans ce navigateur. Exportez-les en GeoJSON pour les partager.</p>
+                        <p class="annotation-file-note">KML s’importe dans Google My Maps. Le CSV (séparateur « ; ») s’ouvre dans Excel. Les annotations restent dans ce navigateur.</p>
                     </div>
                 </details>
             </aside>
@@ -585,6 +587,49 @@
             afficherListeAnnotations();
         }
 
+        function echapperXml(valeur) {
+            return String(valeur ?? "").replace(/[&<>"']/g, (caractere) => ({
+                "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&apos;"
+            })[caractere]);
+        }
+
+        function coordonneesKml(position) {
+            return `${position[0]},${position[1]},0`;
+        }
+
+        function geometrieKml(geometry) {
+            if (geometry.type === "Point") {
+                return `<Point><coordinates>${coordonneesKml(geometry.coordinates)}</coordinates></Point>`;
+            }
+            if (geometry.type === "LineString") {
+                return `<LineString><tessellate>1</tessellate><coordinates>${geometry.coordinates.map(coordonneesKml).join(" ")}</coordinates></LineString>`;
+            }
+            if (geometry.type === "MultiLineString") {
+                const lignes = geometry.coordinates.map((ligne) =>
+                    `<LineString><tessellate>1</tessellate><coordinates>${ligne.map(coordonneesKml).join(" ")}</coordinates></LineString>`
+                ).join("");
+                return `<MultiGeometry>${lignes}</MultiGeometry>`;
+            }
+            if (geometry.type === "Polygon") {
+                const [exterieur, ...interieurs] = geometry.coordinates;
+                const anneauKml = (anneau) => `<LinearRing><coordinates>${anneau.map(coordonneesKml).join(" ")}</coordinates></LinearRing>`;
+                const trous = interieurs.map((anneau) => `<innerBoundaryIs>${anneauKml(anneau)}</innerBoundaryIs>`).join("");
+                return `<Polygon><outerBoundaryIs>${anneauKml(exterieur)}</outerBoundaryIs>${trous}</Polygon>`;
+            }
+            throw new Error(`Géométrie non prise en charge pour KML : ${geometry.type}.`);
+        }
+
+        function telechargerFichier(nom, contenu, type) {
+            const url = URL.createObjectURL(new Blob([contenu], { type }));
+            const lien = document.createElement("a");
+            lien.href = url;
+            lien.download = nom;
+            document.body.appendChild(lien);
+            lien.click();
+            lien.remove();
+            window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
         function afficherListeAnnotations() {
             const liste = document.getElementById("annotation-list");
             liste.replaceChildren();
@@ -829,17 +874,54 @@
             }
         });
         filtresAnnotations.forEach((input) => input.addEventListener("change", afficherAnnotations));
+        document.getElementById("export-kml").addEventListener("click", () => {
+            try {
+                const repertoires = annotations.map((feature) => {
+                    const props = feature.properties;
+                    const details = [
+                        ["Statut", statutsAnnotation[props.status].label],
+                        ["Note", props.note || ""],
+                        ["Créée le", props.createdAt || ""]
+                    ].map(([nom, valeur]) => `<Data name="${echapperXml(nom)}"><value>${echapperXml(valeur)}</value></Data>`).join("");
+                    return `<Placemark><name>${echapperXml(props.title)}</name><ExtendedData>${details}</ExtendedData>${geometrieKml(feature.geometry)}</Placemark>`;
+                }).join("");
+                const kml = `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Annotations du réseau ferroviaire français</name>${repertoires}</Document></kml>`;
+                telechargerFichier("annotations-reseau-ferroviaire-france.kml", kml, "application/vnd.google-earth.kml+xml;charset=utf-8");
+                afficherMessageAnnotation(`${annotations.length} annotation${annotations.length === 1 ? "" : "s"} exportée${annotations.length === 1 ? "" : "s"} en KML.`);
+            } catch (erreur) {
+                afficherMessageAnnotation(`Export KML impossible : ${erreur.message}`, true);
+            }
+        });
+        document.getElementById("export-csv").addEventListener("click", () => {
+            const guillemeter = (valeur, texteLibre = false) => {
+                let texte = String(valeur ?? "");
+                if (texteLibre && /^[\s]*[=+\-@]/.test(texte)) texte = `'${texte}`;
+                return `"${texte.replace(/"/g, '""')}"`;
+            };
+            const enTete = ["Intitulé", "Statut", "Note", "Type de géométrie", "Latitude", "Longitude", "Géométrie GeoJSON", "Date de création"];
+            const lignes = annotations.map((feature) => {
+                const props = feature.properties;
+                const coords = feature.geometry.type === "Point" ? feature.geometry.coordinates : [];
+                const valeurs = [
+                    props.title,
+                    statutsAnnotation[props.status].label,
+                    props.note || "",
+                    feature.geometry.type,
+                    coords.length ? coords[1] : "",
+                    coords.length ? coords[0] : "",
+                    JSON.stringify(feature.geometry),
+                    props.createdAt || ""
+                ];
+                return valeurs.map((valeur, index) => guillemeter(valeur, [0, 1, 2, 7].includes(index))).join(";");
+            });
+            const csv = `\uFEFF${[enTete.map(guillemeter).join(";"), ...lignes].join("\r\n")}`;
+            telechargerFichier("annotations-reseau-ferroviaire-france.csv", csv, "text/csv;charset=utf-8");
+            afficherMessageAnnotation(`${annotations.length} annotation${annotations.length === 1 ? "" : "s"} exportée${annotations.length === 1 ? "" : "s"} en CSV pour Excel.`);
+        });
         document.getElementById("export-annotations").addEventListener("click", () => {
             const collection = { type: "FeatureCollection", name: "annotations-reseau-ferroviaire-france", features: annotations };
-            const url = URL.createObjectURL(new Blob([JSON.stringify(collection, null, 2)], { type: "application/geo+json" }));
-            const lien = document.createElement("a");
-            lien.href = url;
-            lien.download = "annotations-reseau-ferroviaire-france.geojson";
-            document.body.appendChild(lien);
-            lien.click();
-            lien.remove();
-            window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-            afficherMessageAnnotation("Fichier GeoJSON exporté.");
+            telechargerFichier("annotations-reseau-ferroviaire-france.geojson", JSON.stringify(collection, null, 2), "application/geo+json;charset=utf-8");
+            afficherMessageAnnotation(`${annotations.length} annotation${annotations.length === 1 ? "" : "s"} exportée${annotations.length === 1 ? "" : "s"} en GeoJSON.`);
         });
         document.getElementById("import-annotations").addEventListener("change", async (event) => {
             const input = event.currentTarget;
