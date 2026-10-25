@@ -54,11 +54,11 @@
         .hero { display: grid; min-height: min(790px, calc(100svh - 72px)); place-items: center; padding: 64px 24px 54px; }
         .hero-inner { display: grid; grid-template-columns: minmax(320px, .88fr) minmax(420px, 1.12fr); align-items: center; gap: clamp(44px, 7vw, 112px); width: min(1120px, 100%); }
         .hero-art-wrap { position: relative; width: min(100%, 470px); justify-self: center; }
-        .hero-photo { display: block; width: 100%; aspect-ratio: 1; border: 8px solid var(--accent); border-radius: 50%; object-fit: cover; box-shadow: 0 20px 36px rgba(104, 66, 213, .20), 0 0 0 10px rgba(104, 66, 213, .12); }
+        .hero-photo { display: block; width: 100%; height: auto; aspect-ratio: 1; border: 8px solid var(--accent); border-radius: 50%; object-fit: cover; box-shadow: 0 20px 36px rgba(104, 66, 213, .20), 0 0 0 10px rgba(104, 66, 213, .12); }
         .floating-tag { position: absolute; display: flex; align-items: center; gap: 9px; padding: 11px 15px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-solid); box-shadow: var(--shadow); color: var(--muted); font-size: 12px; font-weight: 700; white-space: nowrap; }
         .floating-tag svg { width: 17px; height: 17px; color: var(--accent); }
-        .tag-top { top: 13%; right: -8%; }
-        .tag-bottom { bottom: 12%; left: -8%; }
+        .tag-top { top: -4%; right: -3%; }
+        .tag-bottom { bottom: -7%; left: 50%; transform: translateX(-50%); }
         .hero-copy { max-width: 620px; }
         .eyebrow { display: inline-flex; align-items: center; gap: 9px; margin: 0 0 22px; padding: 9px 15px; border: 1px solid #cce9d8; border-radius: 999px; color: #285d43; background: #eff9f2; font-size: 13px; font-weight: 700; }
         .eyebrow::before { width: 9px; height: 9px; border-radius: 50%; background: #38bd79; content: ""; }
@@ -174,8 +174,7 @@
         @media (max-width: 1080px) {
             .social-rail { display: none; }
             .hero-inner { gap: 48px; }
-            .tag-top { right: -2%; }
-            .tag-bottom { left: -2%; }
+            .tag-top { right: -3%; }
         }
         @media (max-width: 760px) {
             .site-header { padding: 10px 14px; }
@@ -189,8 +188,7 @@
             .hero-inner { grid-template-columns: 1fr; gap: 37px; text-align: center; }
             .hero-art-wrap { width: min(75vw, 340px); }
             .floating-tag { padding: 8px 11px; font-size: 10px; }
-            .tag-top { right: -12%; }
-            .tag-bottom { left: -12%; }
+            .tag-top { right: -3%; }
             .eyebrow { margin-bottom: 16px; font-size: 11px; }
             h1 { font-size: clamp(49px, 13vw, 76px); }
             .hero-role { margin: 13px 0 6px; font-size: clamp(22px, 6vw, 31px); }
